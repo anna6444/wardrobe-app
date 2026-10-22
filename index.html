@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>家庭收纳与日用品仓库</title>
+  
+  <!-- 依赖库 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- 💡 核心：图片压缩库 -->
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #f9f6ef; color: #333; padding-bottom: 100px; font-size: 15px; user-select: none; padding-top: env(safe-area-inset-top); }
+    .container { max-width: 740px; margin: 0 auto; padding: 18px; }
+
+    /* 底部导航 */
+    .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #ece7dc; display: flex; z-index: 99; height: 70px; align-items: center; justify-content: space-around; padding-bottom: env(safe-area-inset-bottom); }
+    .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 8px 0; }
+    .tab-icon { font-size: 22px; filter: grayscale(1); opacity: 0.6; transition: all 0.2s; }
+    .tab-item.active .tab-icon { filter: grayscale(0); opacity: 1; transform: scale(1.1); }
+    .tab-label { font-size: 12px; color: #999; font-weight: 500; }
+    .tab-item.active .tab-label { color: #e6703b; font-weight: 600; }
+
+    /* 通用卡片与组件 */
+    .card { background: #fff; border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    h2 { font-size: 18px; margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; justify-content: space-between;}
+    .btn { background: #e6703b; color: #fff; border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s; }
+    .btn:active { opacity: 0.8; transform: scale(0.98); }
+    .btn.secondary { background: #f1ede4; color: #555; }
+    .btn.small { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+    .tag { display: inline-block; background: #f4ece3; color: #b06237; border-radius: 6px; padding: 3px 8px; font-size: 12px; margin-right: 4px; }
+    .tag.blue { background: #e6f0fa; color: #2b579b; }
+    .tag.red { background: #fce8e8; color: #d14a4a; font-weight: 600;}
+    .tag.orange { background: #fff1e6; color: #c46838; }
+
+    /* 顶部筛选 */
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
+    .filter-btn { padding: 8px 16px; background: #fff; border: 1px solid #e8e2d6; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; }
+    .filter-btn.active { background: #e6703b; color: white; border-color: #e6703b; font-weight: 600; }
+
+    /* 衣物卡片 */
+    .wardrobe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .item-card { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #eee; position: relative; }
+    .item-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f9f9f9; display: block; }
+    .item-info { padding: 12px; }
+    .item-name { font-weight: 600; font-size: 15px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-meta { font-size: 12px; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+    
+    /* 日用品列表 */
+    .list-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px dashed #eee; }
+    .list-row:last-child { border-bottom: none; }
+    .row-danger { background-color: #fff8f8; padding: 12px; border-radius: 12px; border: 1px solid #fce8e8; margin: 8px 0; }
+
+    /* 弹窗 */
+    .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; backdrop-filter: blur(2px); }
+    .modal-box { background: #fff; border-radius: 20px; padding: 24px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease-out;}
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    
+    .input-wrap { margin-bottom: 14px; }
+    label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500;}
+    input, select { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s;}
+    input:focus, select:focus { border-color: #e6703b; background: #fff; }
+    
+    .upload-box { border: 2px dashed #ddd; border-radius: 12px; padding: 20px; text-align: center; position: relative; overflow: hidden; margin-bottom: 14px; }
+    .upload-box input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-preview { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-top: 10px; }
+
+    .empty-text { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
+    
+    /* 加载遮罩 */
+    .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
+    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e6703b; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;}
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="app">
+  
+  <!-- 加载遮罩 -->
+  <div class="loading-mask" v-if="isUploading">
+    <div class="spinner"></div>
+    <div style="font-weight: 600; color: #e6703b;">正在压缩并上传...</div>
+    <div style="font-size: 12px; color: #999; margin-top: 6px;">极致压缩中，请稍候</div>
+  </div>
+
+  <div class="container">
+    
+    <!-- ================= 首页 ================= -->
+    <div v-if="view === 'home'">
+      <div class="card" style="background: linear-gradient(135deg, #fff, #fdfaf6);">
+        <h2>👋 欢迎回家</h2>
+        <p style="color: #666; font-size: 14px; margin-top: 8px;">今天有什么需要整理的？</p>
+      </div>
+
+      <!-- 日用品预警 -->
+      <div class="card" v-if="urgentSupplies.length > 0">
+        <h2 style="color: #d14a4a;">🚨 日用品紧急提醒</h2>
+        <div v-for="item in urgentSupplies" :key="item.id" class="row-danger">
+          <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">
+            {{ item.name }} 
+            <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩 {{ getDaysLeft(item.expire_date) }} 天</span>
+          </div>
+          <div style="font-size: 13px; color: #666;">当前库存：{{ item.quantity }}{{ item.unit }} | 存放：{{ item.location }}</div>
+        </div>
+        <button class="btn small" style="width: 100%; margin-top: 10px;" @click="view='todo'">去查看采购清单</button>
+      </div>
+
+      <!-- 孩子尺码预警 -->
+      <div class="card">
+        <h2>👧 孩子衣物空间</h2>
+        <div style="display: flex; justify-content: space-between; margin-top: 12px;">
+          <div style="text-align: center; flex: 1; border-right: 1px solid #eee;">
+            <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ getOwnerCount('sister') }}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">姐姐的衣物</div>
+          </div>
+          <div style="text-align: center; flex: 1;">
+            <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ getOwnerCount('brother') }}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">弟弟的衣物</div>
+          </div>
+        </div>
+        <div style="font-size: 13px; color: #999; margin-top: 16px; text-align: center;">换季记得检查衣服是否合身哦</div>
+      </div>
+    </div>
+
+    <!-- ================= 衣物库 ================= -->
+    <div v-if="view === 'wardrobe'">
+      
+      <div class="filter-bar">
+        <div class="filter-btn" :class="{active: filterOwner==='all'}" @click="filterOwner='all'">全部</div>
+        <div class="filter-btn" :class="{active: filterOwner==='dad'}" @click="filterOwner='dad'">👨爸爸</div>
+        <div class="filter-btn" :class="{active: filterOwner==='mom'}" @click="filterOwner='mom'">👩妈妈</div>
+        <div class="filter-btn" :class="{active: filterOwner==='sister'}" @click="filterOwner='sister'">👧姐姐</div>
+        <div class="filter-btn" :class="{active: filterOwner==='brother'}" @click="filterOwner='brother'">👦弟弟</div>
+      </div>
+
+      <div class="wardrobe-grid">
+        <div class="item-card" v-for="item in filteredWardrobe" :key="item.id" @click="openEditWardrobe(item)">
+          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img" />
+          <div class="item-info">
+            <div class="item-name">{{ item.name }}</div>
+            <div class="item-meta"><span class="tag blue">{{ item.size }}</span> {{ item.category }}</div>
+            <div class="item-meta" style="color: #e6703b;">📍 {{ item.location }}</div>
+          </div>
+        </div>
+      </div>
+      <div v-if="filteredWardrobe.length === 0" class="empty-text">暂无衣物，点击右下角添加</div>
+      
+      <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddWardrobe">+</button>
+    </div>
+
+    <!-- ================= 日用品库 ================= -->
+    <div v-if="view === 'supplies'">
+      <div class="filter-bar">
+        <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filterSupply='all'">全部</div>
+        <div class="filter-btn" :class="{active: filterSupply==='纸品'}" @click="filterSupply='纸品'">纸品</div>
+        <div class="filter-btn" :class="{active: filterSupply==='清洁'}" @click="filterSupply='清洁'">清洁</div>
+        <div class="filter-btn" :class="{active: filterSupply==='洗护'}" @click="filterSupply='洗护'">洗护</div>
+      </div>
+
+      <div class="card">
+        <div v-for="item in filteredSupplies" :key="item.id" class="list-row">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img :src="item.image_url || 'https://via.placeholder.com/100?text=Item'" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;" />
+            <div>
+              <div style="font-weight: 600; font-size: 15px;">
+                {{ item.name }}
+                <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
+                <span class="tag orange" v-if="item.quantity <= item.low_stock">库存少</span>
+              </div>
+              <div style="font-size: 12px; color: #999; margin-top: 4px;">📍 {{ item.location }} | 过期: {{ item.expire_date || '无' }}</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click="adjustSupply(item, -1)">-</button>
+            <div style="text-align: center; width: 40px;">
+              <div style="font-weight: bold; font-size: 16px;">{{ item.quantity }}</div>
+              <div style="font-size: 10px; color: #999;">{{ item.unit }}</div>
+            </div>
+            <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click="adjustSupply(item, 1)">+</button>
+          </div>
+        </div>
+        <div v-if="filteredSupplies.length === 0" class="empty-text">暂无日用品</div>
+      </div>
+
+      <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddSupply">+</button>
+    </div>
+
+    <!-- ================= 采购清单 ================= -->
+    <div v-if="view === 'todo'">
+      <div class="card">
+        <h2>🛒 待补货清单</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 16px;">系统根据你的库存自动生成：</p>
+        
+        <div v-if="todoList.length === 0" class="empty-text">太棒了，目前没有需要补货的物品！</div>
+        
+        <div v-for="(item, index) in todoList" :key="index" class="list-row">
+          <div style="font-weight: 600;">{{ item.name }}</div>
+          <button class="btn small" :class="item.done ? 'secondary' : ''" @click="item.done = !item.done">
+            {{ item.done ? '已购买' : '未购买' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 我的 ================= -->
+    <div v-if="view === 'setting'">
+      <div class="card">
+        <h2>☁️ 云端连接状态</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 14px;">请配置你的 Supabase 数据库以同步数据和图片。</p>
+        
+        <div class="input-wrap">
+          <label>Supabase URL</label>
+          <input v-model="sbConfig.url" placeholder="https://xxxx.supabase.co" />
+        </div>
+        <div class="input-wrap">
+          <label>Supabase Anon Key</label>
+          <input v-model="sbConfig.key" type="password" placeholder="eyJh..." />
+        </div>
+        <button class="btn" style="width: 100%; background: #4A90E2;" @click="saveConfig">保存并连接</button>
+      </div>
+
+      <div class="card" style="background: #eaf6ec; border: 1px solid #cce5d2;">
+        <h2 style="color: #2b703b;">🛡️ 图片极致压缩功能已开启</h2>
+        <p style="font-size: 13px; color: #2b703b; line-height: 1.6;">
+          为了节省你宝贵的 1GB 存储空间，上传照片时会自动压缩至 <b>0.1~0.2MB</b> 左右，并且自动清除过期废弃图片。
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="tab-bar">
+    <div class="tab-item" :class="{active: view==='home'}" @click="view='home'"><span class="tab-icon">🏠</span><span class="tab-label">首页</span></div>
+    <div class="tab-item" :class="{active: view==='wardrobe'}" @click="view='wardrobe'"><span class="tab-icon">👕</span><span class="tab-label">衣物库</span></div>
+    <div class="tab-item" :class="{active: view==='supplies'}" @click="view='supplies'"><span class="tab-icon">🧻</span><span class="tab-label">日用品</span></div>
+    <div class="tab-item" :class="{active: view==='todo'}" @click="view='todo'"><span class="tab-icon">📝</span><span class="tab-label">采购清单</span></div>
+    <div class="tab-item" :class="{active: view==='setting'}" @click="view='setting'"><span class="tab-icon">⚙️</span><span class="tab-label">设置</span></div>
+  </div>
+
+  <!-- ================= 弹窗：添加/编辑衣物 ================= -->
+  <div class="modal-mask" v-if="modal.show" @click.self="modal.show=false">
+    <div class="modal-box">
+      <h3 style="margin-bottom: 16px;">{{ modal.isEdit ? '编辑衣物' : '添加衣物' }}</h3>
+      
+      <div class="upload-box">
+        <input type="file" accept="image/*" @change="handleFileUpload($event, 'wardrobe')" />
+        <div v-if="!modal.form.image_url" style="color: #999;">
+          <div style="font-size: 24px; margin-bottom: 8px;">📷</div>
+          点击拍照或上传图片
+        </div>
+        <img v-else :src="modal.form.image_url" class="upload-preview" />
+      </div>
+
+      <div class="input-wrap">
+        <label>所属人</label>
+        <select v-model="modal.form.owner">
+          <option value="dad">爸爸</option>
+          <option value="mom">妈妈</option>
+          <option value="sister">姐姐</option>
+          <option value="brother">弟弟</option>
+          <option value="other">其他/全家</option>
+        </select>
+      </div>
+      <div class="input-wrap">
+        <label>衣物名称</label>
+        <input v-model="modal.form.name" placeholder="例如：红色羽绒服 / 运动鞋" />
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div class="input-wrap" style="flex: 1;">
+          <label>品类</label>
+          <select v-model="modal.form.category">
+            <option value="上衣">上衣</option>
+            <option value="裤子">裤子</option>
+            <option value="外套">外套</option>
+            <option value="鞋子">鞋子</option>
+            <option value="配饰">配饰</option>
+          </select>
+        </div>
+        <div class="input-wrap" style="flex: 1;">
+          <label>尺码</label>
+          <input v-model="modal.form.size" placeholder="如：140 / 37码" />
+        </div>
+      </div>
+      <div class="input-wrap">
+        <label>存放位置 (非常重要！)</label>
+        <input v-model="modal.form.location" placeholder="如：主卧衣柜上层 / 床底收纳箱A" />
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button v-if="modal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; flex: 1;" @click="deleteWardrobe">删除</button>
+        <button class="btn" style="flex: 2;" @click="saveWardrobe">保存入库</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 弹窗：添加日用品 ================= -->
+  <div class="modal-mask" v-if="supplyModal.show" @click.self="supplyModal.show=false">
+    <div class="modal-box">
+      <h3 style="margin-bottom: 16px;">添加日用品</h3>
+      
+      <div class="upload-box">
+        <input type="file" accept="image/*" @change="handleFileUpload($event, 'supply')" />
+        <div v-if="!supplyModal.form.image_url" style="color: #999;">
+          <div style="font-size: 24px; margin-bottom: 8px;">📷</div>
+          点击拍照或上传图片
+        </div>
+        <img v-else :src="supplyModal.form.image_url" class="upload-preview" />
+      </div>
+
+      <div class="input-wrap">
+        <label>物品名称</label>
+        <input v-model="supplyModal.form.name" placeholder="例如：抽纸 / 洗衣液" />
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div class="input-wrap" style="flex: 1;">
+          <label>分类</label>
+          <select v-model="supplyModal.form.category">
+            <option value="纸品">纸品</option>
+            <option value="清洁">清洁</option>
+            <option value="洗护">洗护</option>
+            <option value="药品">药品</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="input-wrap" style="flex: 1;">
+          <label>存放位置</label>
+          <input v-model="supplyModal.form.location" placeholder="如：卫生间镜柜" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div class="input-wrap" style="flex: 1;">
+          <label>当前数量</label>
+          <input type="number" v-model="supplyModal.form.quantity" placeholder="如：5" />
+        </div>
+        <div class="input-wrap" style="flex: 1;">
+          <label>单位</label>
+          <input v-model="supplyModal.form.unit" placeholder="如：包 / 瓶" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <div class="input-wrap" style="flex: 1;">
+          <label>低库存提醒值 (<=)</label>
+          <input type="number" v-model="supplyModal.form.low_stock" placeholder="如：2" />
+        </div>
+        <div class="input-wrap" style="flex: 1;">
+          <label>保质期至</label>
+          <input type="date" v-model="supplyModal.form.expire_date" />
+        </div>
+      </div>
+
+      <button class="btn" style="width: 100%; margin-top: 20px;" @click="saveSupply">保存入库</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      view: 'home',
+      isUploading: false,
+      
+      // Supabase 配置
+      sbConfig: {
+        url: localStorage.getItem('sb_url') || '',
+        key: localStorage.getItem('sb_key') || ''
+      },
+      supabase: null,
+      
+      // 数据
+      wardrobeData: [],
+      suppliesData: [],
+      
+      // 筛选状态
+      filterOwner: 'all',
+      filterSupply: 'all',
+      
+      // 弹窗控制
+      modal: {
+        show: false, isEdit: false,
+        form: { id: null, owner: 'dad', name: '', category: '上衣', size: '', location: '', image_url: '' }
+      },
+      supplyModal: {
+        show: false,
+        form: { name: '', category: '纸品', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location: '', image_url: '' }
+      }
+    };
+  },
+  
+  computed: {
+    filteredWardrobe() {
+      if (this.filterOwner === 'all') return this.wardrobeData;
+      return this.wardrobeData.filter(item => item.owner === this.filterOwner);
+    },
+    filteredSupplies() {
+      if (this.filterSupply === 'all') return this.suppliesData;
+      return this.suppliesData.filter(item => item.category === this.filterSupply);
+    },
+    urgentSupplies() {
+      return this.suppliesData.filter(item => {
+        const isExpiring = this.getDaysLeft(item.expire_date) <= 30;
+        const isLowStock = item.quantity <= item.low_stock;
+        return isExpiring || isLowStock;
+      });
+    },
+    todoList() {
+      return this.urgentSupplies.map(item => ({
+        name: item.name,
+        done: false
+      }));
+    }
+  },
+  
+  mounted() {
+    if (this.sbConfig.url && this.sbConfig.key) {
+      this.initSupabase();
+    } else {
+      this.view = 'setting';
+    }
+  },
+  
+  methods: {
+    initSupabase() {
+      try {
+        this.supabase = supabase.createClient(this.sbConfig.url, this.sbConfig.key);
+        this.fetchData();
+      } catch(e) {
+        alert("连接 Supabase 失败，请检查配置");
+      }
+    },
+
+    saveConfig() {
+      localStorage.setItem('sb_url', this.sbConfig.url);
+      localStorage.setItem('sb_key', this.sbConfig.key);
+      this.initSupabase();
+      alert("✅ 配置已保存！正在拉取数据...");
+    },
+
+    async fetchData() {
+      if (!this.supabase) return;
+      
+      // 拉取衣物
+      const { data: wardrobe, error: err1 } = await this.supabase.from('wardrobe').select('*').order('created_at', { ascending: false });
+      if (!err1 && wardrobe) this.wardrobeData = wardrobe;
+      
+      // 拉取日用品
+      const { data: supplies, error: err2 } = await this.supabase.from('supplies').select('*').order('created_at', { ascending: false });
+      if (!err2 && supplies) this.suppliesData = supplies;
+    },
+
+    // 💡 核心：前端图片压缩
+    async handleFileUpload(event, target) {
+      const file = event.target.files[0];
+      if (!file || !this.supabase) return;
+
+      this.isUploading = true;
+      try {
+        // 1. 极致压缩配置：最大 800px，体积控制在 0.2MB 以内
+        const options = {
+          maxSizeMB: 0.2,
+          maxWidthOrHeight: 800,
+          useWebWorker: true
+        };
+        const compressedFile = await imageCompression(file, options);
+        
+        // 2. 生成文件名并上传
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
+        const { data, error } = await this.supabase.storage
+          .from('wardrobe')
+          .upload(fileName, compressedFile, { contentType: 'image/webp' });
+
+        if (error) throw error;
+
+        // 3. 获取公开链接
+        const { data: { publicUrl } } = this.supabase.storage.from('wardrobe').getPublicUrl(fileName);
+
+        // 4. 赋值给表单
+        if (target === 'wardrobe') this.modal.form.image_url = publicUrl;
+        if (target === 'supply') this.supplyModal.form.image_url = publicUrl;
+        
+      } catch (error) {
+        alert("上传失败：" + error.message);
+      } finally {
+        this.isUploading = false;
+      }
+    },
+
+    // --- 衣物逻辑 ---
+    openAddWardrobe() {
+      this.modal = {
+        show: true, isEdit: false,
+        form: { id: null, owner: this.filterOwner === 'all' ? 'dad' : this.filterOwner, name: '', category: '上衣', size: '', location: '', image_url: '' }
+      };
+    },
+    openEditWardrobe(item) {
+      this.modal = { show: true, isEdit: true, form: { ...item } };
+    },
+    async saveWardrobe() {
+      const f = this.modal.form;
+      if (!f.name || !f.location) { alert("请填写名称和存放位置"); return; }
+      
+      const payload = { owner: f.owner, name: f.name, category: f.category, size: f.size, location: f.location, image_url: f.image_url };
+
+      if (this.modal.isEdit) {
+        await this.supabase.from('wardrobe').update(payload).eq('id', f.id);
+      } else {
+        await this.supabase.from('wardrobe').insert([payload]);
+      }
+      this.modal.show = false;
+      this.fetchData();
+    },
+    async deleteWardrobe() {
+      if (!confirm("确定删除这件衣物吗？")) return;
+      await this.supabase.from('wardrobe').delete().eq('id', this.modal.form.id);
+      this.modal.show = false;
+      this.fetchData();
+    },
+
+    // --- 日用品逻辑 ---
+    openAddSupply() {
+      this.supplyModal = {
+        show: true,
+        form: { name: '', category: '纸品', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location: '', image_url: '' }
+      };
+    },
+    async saveSupply() {
+      const f = this.supplyModal.form;
+      if (!f.name) { alert("请填写物品名称"); return; }
+      
+      const payload = { name: f.name, category: f.category, quantity: Number(f.quantity), unit: f.unit, expire_date: f.expire_date || null, low_stock: Number(f.low_stock), location: f.location, image_url: f.image_url };
+      
+      await this.supabase.from('supplies').insert([payload]);
+      this.supplyModal.show = false;
+      this.fetchData();
+    },
+    async adjustSupply(item, delta) {
+      const newQty = Math.max(0, Number(item.quantity) + delta);
+      item.quantity = newQty; // 前端立刻响应
+      await this.supabase.from('supplies').update({ quantity: newQty }).eq('id', item.id);
+    },
+
+    // --- 通用方法 ---
+    getDaysLeft(expireDate) {
+      if (!expireDate) return 999;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const exp = new Date(expireDate);
+      const diff = Math.floor((exp - today) / (1000 * 60 * 60 * 24));
+      return diff >= 0 ? diff : 0;
+    },
+    getOwnerCount(owner) {
+      return this.wardrobeData.filter(item => item.owner === owner).length;
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
