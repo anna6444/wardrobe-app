@@ -37,9 +37,11 @@
     .tag.green { background: #eaf6ec; color: #2b703b; }
 
     /* 顶部筛选 */
-    .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
+    .filter-container { margin-bottom: 16px; }
+    .filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px;}
     .filter-btn { padding: 8px 16px; background: #fff; border: 1px solid #e8e2d6; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; }
     .filter-btn.active { background: #e6703b; color: white; border-color: #e6703b; font-weight: 600; }
+    .season-select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #e8e2d6; font-size: 14px; background: #fff; color: #555; }
 
     /* 衣物卡片 */
     .wardrobe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -86,7 +88,7 @@
   <!-- 加载遮罩 -->
   <div class="loading-mask" v-if="isUploading">
     <div class="spinner"></div>
-    <div style="font-weight: 600; color: #e6703b;">正在压缩并上传...</div>
+    <div style="font-weight: 600; color: #e6703b;">处理中...</div>
     <div style="font-size: 12px; color: #999; margin-top: 6px;">请勿关闭页面</div>
   </div>
 
@@ -130,12 +132,25 @@
     <!-- ================= 衣物库 ================= -->
     <div v-if="view === 'wardrobe'">
       
-      <div class="filter-bar">
-        <div class="filter-btn" :class="{active: filterOwner==='all'}" @click="filterOwner='all'">全部</div>
-        <div class="filter-btn" :class="{active: filterOwner==='dad'}" @click="filterOwner='dad'">👨爸爸</div>
-        <div class="filter-btn" :class="{active: filterOwner==='mom'}" @click="filterOwner='mom'">👩妈妈</div>
-        <div class="filter-btn" :class="{active: filterOwner==='sister'}" @click="filterOwner='sister'">👧姐姐</div>
-        <div class="filter-btn" :class="{active: filterOwner==='brother'}" @click="filterOwner='brother'">👦弟弟</div>
+      <!-- 筛选区 -->
+      <div class="filter-container">
+        <div class="filter-bar">
+          <div class="filter-btn" :class="{active: filterOwner==='all'}" @click="filterOwner='all'">全部人</div>
+          <div class="filter-btn" :class="{active: filterOwner==='dad'}" @click="filterOwner='dad'">👨爸爸</div>
+          <div class="filter-btn" :class="{active: filterOwner==='mom'}" @click="filterOwner='mom'">👩妈妈</div>
+          <div class="filter-btn" :class="{active: filterOwner==='sister'}" @click="filterOwner='sister'">👧姐姐</div>
+          <div class="filter-btn" :class="{active: filterOwner==='brother'}" @click="filterOwner='brother'">👦弟弟</div>
+        </div>
+        <!-- 💡 新增季节筛选 -->
+        <select v-model="filterSeason" class="season-select">
+          <option value="all">🌤️ 所有季节</option>
+          <option value="春季">🌸 春季</option>
+          <option value="夏季">☀️ 夏季</option>
+          <option value="秋季">🍁 秋季</option>
+          <option value="冬季">❄️ 冬季</option>
+          <option value="春秋">🍃 春秋季</option>
+          <option value="四季">📅 四季/不限</option>
+        </select>
       </div>
 
       <div class="wardrobe-grid">
@@ -143,7 +158,11 @@
           <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img" />
           <div class="item-info">
             <div class="item-name">{{ item.name }}</div>
-            <div class="item-meta"><span class="tag blue">{{ item.size }}</span> {{ item.category }}</div>
+            <div class="item-meta">
+              <span class="tag blue">{{ item.size }}</span> 
+              {{ item.category }} 
+              <span v-if="item.season" class="tag green">{{ item.season }}</span>
+            </div>
             
             <div class="item-meta" style="color: #e6703b; font-weight: 600;">
               📍 {{ item.location }} 
@@ -155,20 +174,32 @@
           </div>
         </div>
       </div>
-      <div v-if="filteredWardrobe.length === 0" class="empty-text">暂无衣物，点击右下角添加</div>
+      <div v-if="filteredWardrobe.length === 0" class="empty-text">暂无符合筛选条件的衣物</div>
       
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddWardrobe">+</button>
     </div>
 
     <!-- ================= 日用品库 ================= -->
     <div v-if="view === 'supplies'">
-      <div class="filter-bar">
-        <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filterSupply='all'">全部</div>
-        <div class="filter-btn" :class="{active: filterSupply==='纸品'}" @click="filterSupply='纸品'">纸品</div>
-        <div class="filter-btn" :class="{active: filterSupply==='清洁'}" @click="filterSupply='清洁'">清洁</div>
-        <div class="filter-btn" :class="{active: filterSupply==='洗护'}" @click="filterSupply='洗护'">洗护</div>
-        <div class="filter-btn" :class="{active: filterSupply==='药品'}" @click="filterSupply='药品'">药品</div>
-        <div class="filter-btn" :class="{active: filterSupply==='被子/床品'}" @click="filterSupply='被子/床品'">被子/床品</div>
+      <div class="filter-container">
+        <div class="filter-bar">
+          <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filterSupply='all'">全部</div>
+          <div class="filter-btn" :class="{active: filterSupply==='纸品'}" @click="filterSupply='纸品'">纸品</div>
+          <div class="filter-btn" :class="{active: filterSupply==='清洁'}" @click="filterSupply='清洁'">清洁</div>
+          <div class="filter-btn" :class="{active: filterSupply==='洗护'}" @click="filterSupply='洗护'">洗护</div>
+          <div class="filter-btn" :class="{active: filterSupply==='药品'}" @click="filterSupply='药品'">药品</div>
+          <div class="filter-btn" :class="{active: filterSupply==='被子/床品'}" @click="filterSupply='被子/床品'">被子/床品</div>
+        </div>
+        <!-- 💡 新增季节筛选 -->
+        <select v-model="filterSupplySeason" class="season-select">
+          <option value="all">🌤️ 所有季节</option>
+          <option value="春季">🌸 春季</option>
+          <option value="夏季">☀️ 夏季</option>
+          <option value="秋季">🍁 秋季</option>
+          <option value="冬季">❄️ 冬季</option>
+          <option value="春秋">🍃 春秋季</option>
+          <option value="四季">📅 四季/不限</option>
+        </select>
       </div>
 
       <div class="card">
@@ -180,6 +211,7 @@
                 {{ item.name }}
                 <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
                 <span class="tag orange" v-if="item.quantity <= item.low_stock">库存少</span>
+                <span v-if="item.season" class="tag green">{{ item.season }}</span>
               </div>
               <div style="font-size: 12px; color: #999; margin-top: 4px;">📍 {{ item.location }} | 过期: {{ item.expire_date || '无' }}</div>
             </div>
@@ -193,7 +225,7 @@
             <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click="adjustSupply(item, 1)">+</button>
           </div>
         </div>
-        <div v-if="filteredSupplies.length === 0" class="empty-text">暂无该分类物品</div>
+        <div v-if="filteredSupplies.length === 0" class="empty-text">暂无符合筛选条件的物品</div>
       </div>
 
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddSupply">+</button>
@@ -270,16 +302,30 @@
         </template>
       </div>
 
-      <div class="input-wrap">
-        <label>所属人</label>
-        <select v-model="modal.form.owner">
-          <option value="dad">爸爸</option>
-          <option value="mom">妈妈</option>
-          <option value="sister">姐姐</option>
-          <option value="brother">弟弟</option>
-          <option value="other">其他/全家</option>
-        </select>
+      <div style="display: flex; gap: 10px;">
+        <div class="input-wrap" style="flex: 1;">
+          <label>所属人</label>
+          <select v-model="modal.form.owner">
+            <option value="dad">爸爸</option>
+            <option value="mom">妈妈</option>
+            <option value="sister">姐姐</option>
+            <option value="brother">弟弟</option>
+            <option value="other">其他/全家</option>
+          </select>
+        </div>
+        <div class="input-wrap" style="flex: 1;">
+          <label>适用季节</label>
+          <select v-model="modal.form.season">
+            <option value="春季">春季</option>
+            <option value="夏季">夏季</option>
+            <option value="秋季">秋季</option>
+            <option value="冬季">冬季</option>
+            <option value="春秋">春秋季</option>
+            <option value="四季">四季/不限</option>
+          </select>
+        </div>
       </div>
+
       <div class="input-wrap">
         <label>衣物名称 <span style="color:red">*</span></label>
         <input v-model="modal.form.name" placeholder="例如：红色羽绒服 / 运动鞋" />
@@ -328,7 +374,7 @@
       <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button v-if="modal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; flex: 1;" @click="deleteWardrobe">删除</button>
         <button class="btn" style="flex: 2;" @click="saveWardrobe" :disabled="isUploading">
-          {{ isUploading ? '上传中...' : '保存入库' }}
+          {{ isUploading ? '保存中...' : '保存入库' }}
         </button>
       </div>
     </div>
@@ -354,7 +400,7 @@
 
       <div class="input-wrap">
         <label>物品名称 <span style="color:red">*</span></label>
-        <input v-model="supplyModal.form.name" placeholder="例如：抽纸 / 洗衣液 / 感冒药" />
+        <input v-model="supplyModal.form.name" placeholder="例如：抽纸 / 洗衣液 / 冬被" />
       </div>
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
@@ -369,33 +415,44 @@
           </select>
         </div>
         <div class="input-wrap" style="flex: 1;">
-          <label>存放位置</label>
-          <input v-model="supplyModal.form.location" placeholder="如：卫生间镜柜" />
+          <label>适用季节 (主要针对被子)</label>
+          <select v-model="supplyModal.form.season">
+            <option value="春季">春季</option>
+            <option value="夏季">夏季</option>
+            <option value="秋季">秋季</option>
+            <option value="冬季">冬季</option>
+            <option value="春秋">春秋季</option>
+            <option value="四季">四季/不限</option>
+          </select>
         </div>
       </div>
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
-          <label>当前数量</label>
-          <input type="number" v-model="supplyModal.form.quantity" placeholder="如：5" />
+          <label>存放位置</label>
+          <input v-model="supplyModal.form.location" placeholder="如：次卧顶柜" />
         </div>
+        <div class="input-wrap" style="flex: 1;">
+          <label>当前数量</label>
+          <input type="number" v-model="supplyModal.form.quantity" placeholder="如：2" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
           <label>单位</label>
           <input v-model="supplyModal.form.unit" placeholder="如：包 / 瓶 / 床" />
         </div>
+        <div class="input-wrap" style="flex: 1;">
+          <label>低库存提醒 (≤)</label>
+          <input type="number" v-model="supplyModal.form.low_stock" placeholder="如：1" />
+        </div>
       </div>
-      <div style="display: flex; gap: 10px;">
-        <div class="input-wrap" style="flex: 1;">
-          <label>低库存提醒值 (≤)</label>
-          <input type="number" v-model="supplyModal.form.low_stock" placeholder="如：2" />
-        </div>
-        <div class="input-wrap" style="flex: 1;">
-          <label>保质期至</label>
-          <input type="date" v-model="supplyModal.form.expire_date" />
-        </div>
+      <div class="input-wrap">
+        <label>保质期至 (被子可不填)</label>
+        <input type="date" v-model="supplyModal.form.expire_date" />
       </div>
 
-      <button class="btn" style="width: 100%; margin-top: 20px;" @click="saveSupply" :disabled="isUploading">
-        {{ isUploading ? '上传中...' : '保存入库' }}
+      <button class="btn" style="width: 100%; margin-top: 10px;" @click="saveSupply" :disabled="isUploading">
+        {{ isUploading ? '保存中...' : '保存入库' }}
       </button>
     </div>
   </div>
@@ -453,28 +510,37 @@ createApp({
       wardrobeData: [],
       suppliesData: [],
       
+      // 筛选状态
       filterOwner: 'all',
+      filterSeason: 'all',
       filterSupply: 'all',
+      filterSupplySeason: 'all',
       
       modal: {
         show: false, isEdit: false,
-        form: { id: null, owner: 'dad', name: '', category: '上衣', size: '', location: '', location_code: '', location_image_url: '', image_url: '' }
+        form: { id: null, owner: 'dad', season: '四季', name: '', category: '上衣', size: '', location: '', location_code: '', location_image_url: '', image_url: '' }
       },
       supplyModal: {
         show: false,
-        form: { name: '', category: '纸品', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location: '', image_url: '' }
+        form: { name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location: '', image_url: '' }
       }
     };
   },
   
   computed: {
     filteredWardrobe() {
-      if (this.filterOwner === 'all') return this.wardrobeData;
-      return this.wardrobeData.filter(item => item.owner === this.filterOwner);
+      return this.wardrobeData.filter(item => {
+        const matchOwner = this.filterOwner === 'all' || item.owner === this.filterOwner;
+        const matchSeason = this.filterSeason === 'all' || item.season === this.filterSeason;
+        return matchOwner && matchSeason;
+      });
     },
     filteredSupplies() {
-      if (this.filterSupply === 'all') return this.suppliesData;
-      return this.suppliesData.filter(item => item.category === this.filterSupply);
+      return this.suppliesData.filter(item => {
+        const matchCategory = this.filterSupply === 'all' || item.category === this.filterSupply;
+        const matchSeason = this.filterSupplySeason === 'all' || item.season === this.filterSupplySeason;
+        return matchCategory && matchSeason;
+      });
     },
     urgentSupplies() {
       return this.suppliesData.filter(item => {
@@ -570,7 +636,6 @@ createApp({
         alert("上传失败：" + (error.message || "未知错误"));
       } finally {
         this.isUploading = false;
-        // 清空 input，防止选同一张图不触发 change
         event.target.value = '';
       }
     },
@@ -578,7 +643,7 @@ createApp({
     openAddWardrobe() {
       this.modal = {
         show: true, isEdit: false,
-        form: { id: null, owner: this.filterOwner === 'all' ? 'dad' : this.filterOwner, name: '', category: '上衣', size: '', location: '', location_code: '', location_image_url: '', image_url: '' }
+        form: { id: null, owner: this.filterOwner === 'all' ? 'dad' : this.filterOwner, season: '四季', name: '', category: '上衣', size: '', location: '', location_code: '', location_image_url: '', image_url: '' }
       };
     },
     openEditWardrobe(item) {
@@ -596,9 +661,9 @@ createApp({
         return; 
       }
       
-      this.isUploading = true; // 借用遮罩层防止连点
+      this.isUploading = true;
       const payload = { 
-        owner: f.owner, name: f.name, category: f.category, size: f.size, 
+        owner: f.owner, name: f.name, category: f.category, size: f.size, season: f.season,
         location: f.location, location_code: f.location_code, 
         location_image_url: f.location_image_url, image_url: f.image_url 
       };
@@ -637,7 +702,7 @@ createApp({
     openAddSupply() {
       this.supplyModal = {
         show: true,
-        form: { name: '', category: '纸品', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location: '', image_url: '' }
+        form: { name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location: '', image_url: '' }
       };
     },
     async saveSupply() {
@@ -653,7 +718,7 @@ createApp({
       }
       
       this.isUploading = true;
-      const payload = { name: f.name, category: f.category, quantity: Number(f.quantity), unit: f.unit, expire_date: f.expire_date || null, low_stock: Number(f.low_stock), location: f.location, image_url: f.image_url };
+      const payload = { name: f.name, category: f.category, season: f.season, quantity: Number(f.quantity), unit: f.unit, expire_date: f.expire_date || null, low_stock: Number(f.low_stock), location: f.location, image_url: f.image_url };
       
       try {
         const { error } = await this.supabase.from('supplies').insert([payload]);
