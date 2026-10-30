@@ -114,9 +114,13 @@
             <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ wardrobeData.length }}</div>
             <div style="font-size: 12px; color: #666; margin-top: 4px;">衣物总数</div>
           </div>
+          <div style="text-align: center; flex: 1; border-right: 1px solid #eee;">
+            <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ suppliesData.length }}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">日用品总数</div>
+          </div>
           <div style="text-align: center; flex: 1;">
             <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ locationsData.length }}</div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">收纳袋/箱</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">收纳容器</div>
           </div>
         </div>
       </div>
@@ -164,12 +168,12 @@
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddWardrobe">+</button>
     </div>
 
-    <!-- ================= 收纳库 (容器) ================= -->
+    <!-- ================= 收纳库 ================= -->
     <div v-if="view === 'storage'">
       <div class="card" style="background: #eaf6ec; border: 1px solid #cce5d2; margin-bottom: 20px;">
-        <h2 style="color: #2b703b; font-size: 16px;">💡 什么是收纳库？</h2>
+        <h2 style="color: #2b703b; font-size: 16px;">💡 为什么要建收纳库？</h2>
         <p style="font-size: 13px; color: #2b703b; margin-top: 8px; line-height: 1.5;">
-          把收纳袋/箱子当成“容器”，拍一张照。录入衣服时直接选箱子，不用每件衣服都拍照，极大节省空间！
+          把收纳袋/箱子当成“容器”，拍一张照。录入衣服和被子时直接选箱子，极大节省空间，且找东西一目了然！
         </p>
       </div>
 
@@ -229,7 +233,9 @@
                 {{ item.name }}
                 <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
               </div>
-              <div style="font-size: 12px; color: #999; margin-top: 4px;">📍 {{ item.location }}</div>
+              <div style="font-size: 12px; color: #999; margin-top: 4px;">
+                📍 {{ getLocationName(item.location_id) || item.location || '未指定位置' }}
+              </div>
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -312,7 +318,7 @@
       </div>
       <div class="input-wrap">
         <label>备注 (里面装了什么大类)</label>
-        <textarea v-model="locModal.form.description" rows="2" placeholder="如：全是姐姐的冬季外套"></textarea>
+        <textarea v-model="locModal.form.description" rows="2" placeholder="如：全是姐姐的冬季外套，或者全是冬被"></textarea>
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -324,22 +330,28 @@
     </div>
   </div>
 
-  <!-- ================= 弹窗：查看容器里的衣物 ================= -->
+  <!-- ================= 弹窗：查看容器里的物品 ================= -->
   <div class="modal-mask" v-if="locItemsModal.show" @click.self="locItemsModal.show=false">
     <div class="modal-box">
       <h3 style="margin-bottom: 4px;">📦 {{ locItemsModal.loc.code }} - {{ locItemsModal.loc.name }}</h3>
-      <p style="font-size: 12px; color: #999; margin-bottom: 16px;">该位置内共有 {{ locItemsModal.items.length }} 件物品</p>
+      <p style="font-size: 12px; color: #999; margin-bottom: 16px;">共装有 {{ locItemsModal.items.length }} 件物品</p>
       
       <div v-if="locItemsModal.items.length === 0" class="empty-text" style="padding: 20px;">这个箱子里空空如也~</div>
-      <div v-for="item in locItemsModal.items" :key="item.id" class="list-row" style="padding: 10px 0;">
+      
+      <!-- 遍历显示物品 (包含衣物和日用品) -->
+      <div v-for="item in locItemsModal.items" :key="item.unique_id" class="list-row" style="padding: 10px 0;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <img :src="item.image_url || 'https://via.placeholder.com/50'" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;" />
           <div>
-            <div style="font-weight: 600; font-size: 14px;">{{ item.name }}</div>
-            <div style="font-size: 12px; color: #666;">尺码: {{ item.size }}</div>
+            <div style="font-weight: 600; font-size: 14px;">
+              <span style="font-size: 16px; margin-right: 4px;">{{ item.type === 'wardrobe' ? '👕' : '🧻' }}</span>
+              {{ item.name }}
+            </div>
+            <div style="font-size: 12px; color: #666;" v-if="item.type === 'wardrobe'">尺码: {{ item.size }}</div>
+            <div style="font-size: 12px; color: #666;" v-else>数量: {{ item.quantity }} {{ item.unit }}</div>
           </div>
         </div>
-        <button class="btn small secondary" @click="locItemsModal.show=false; openEditWardrobe(item)">查看</button>
+        <button class="btn small secondary" @click="locItemsModal.show=false; item.type === 'wardrobe' ? openEditWardrobe(item) : null">查看</button>
       </div>
       
       <button class="btn secondary" style="width: 100%; margin-top: 16px;" @click="locItemsModal.show=false">关闭</button>
@@ -477,9 +489,15 @@
       </div>
       
       <div style="display: flex; gap: 10px;">
-        <div class="input-wrap" style="flex: 1;">
-          <label>存放位置文本 (如：次卧顶柜)</label>
-          <input v-model="supplyModal.form.location" placeholder="如：次卧顶柜" />
+        <!-- 💡 日用品也可以选择收纳库了 -->
+        <div class="input-wrap" style="flex: 1; background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
+          <label style="color: #d14a4a; font-weight: 600;">📍 存放在哪？</label>
+          <select v-model="supplyModal.form.location_id" style="border-color: #fce8e8;">
+            <option :value="null">-- 选择收纳容器 --</option>
+            <option v-for="loc in locationsData" :key="loc.id" :value="loc.id">
+              {{ loc.code }} - {{ loc.name }}
+            </option>
+          </select>
         </div>
         <div class="input-wrap" style="flex: 1;">
           <label>当前数量</label>
@@ -551,14 +569,13 @@ createApp({
       
       wardrobeData: [],
       suppliesData: [],
-      locationsData: [], // 💡 新增：收纳位置数据
+      locationsData: [],
       
       filterOwner: 'all',
       filterSeason: 'all',
       filterSupply: 'all',
       filterSupplySeason: 'all',
       
-      // 弹窗控制
       locModal: {
         show: false, isEdit: false,
         form: { id: null, code: '', name: '', description: '', image_url: '' }
@@ -572,7 +589,7 @@ createApp({
       },
       supplyModal: {
         show: false,
-        form: { name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location: '', image_url: '' }
+        form: { name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
       }
     };
   },
@@ -594,9 +611,9 @@ createApp({
     },
     urgentSupplies() {
       return this.suppliesData.filter(item => {
-        const isExpiring = this.getDaysLeft(item.expire_date return) <= 30;
-        const is isLowStock = item.quantityExp <= item.low_stock;
-       iring || isLowStock;
+        const isExpiring = this.getDaysLeft(item.expire_date) <= 30;
+        const isLowStock = item.quantity <= item.low_stock;
+        return isExpiring || isLowStock;
       });
     },
     todoList() {
@@ -638,15 +655,12 @@ createApp({
     async fetchData() {
       if (!this.supabase) return;
       try {
-        // 拉取收纳位置
         const { data: locs } = await this.supabase.from('storage_locations').select('*').order('code', { ascending: true });
         if (locs) this.locationsData = locs;
 
-        // 拉取衣物
         const { data: wardrobe } = await this.supabase.from('wardrobe').select('*').order('created_at', { ascending: false });
         if (wardrobe) this.wardrobeData = wardrobe;
         
-        // 拉取日用品
         const { data: supplies } = await this.supabase.from('supplies').select('*').order('created_at', { ascending: false });
         if (supplies) this.suppliesData = supplies;
       } catch (e) {
@@ -686,8 +700,11 @@ createApp({
       this.locModal = { show: true, isEdit: false, form: { id: null, code: '', name: '', description: '', image_url: '' } };
     },
     openLocationItems(loc) {
-      const items = this.wardrobeData.filter(item => item.location_id === loc.id);
-      this.locItemsModal = { show: true, loc: loc, items: items };
+      // 合并衣物和日用品
+      const wardrobeItems = this.wardrobeData.filter(item => item.location_id === loc.id).map(i => ({...i, type: 'wardrobe', unique_id: 'w_'+i.id}));
+      const supplyItems = this.suppliesData.filter(item => item.location_id === loc.id).map(i => ({...i, type: 'supply', unique_id: 's_'+i.id}));
+      
+      this.locItemsModal = { show: true, loc: loc, items: [...wardrobeItems, ...supplyItems] };
     },
     async saveLocation() {
       const f = this.locModal.form;
@@ -709,7 +726,7 @@ createApp({
       }
     },
     async deleteLocation() {
-      if (!confirm("删除位置后，里面的衣物将失去关联，确定吗？")) return;
+      if (!confirm("删除位置后，里面的物品将失去关联，确定吗？")) return;
       this.isUploading = true;
       try {
         await this.supabase.from('storage_locations').delete().eq('id', this.locModal.form.id);
@@ -774,14 +791,19 @@ createApp({
     openAddSupply() {
       this.supplyModal = {
         show: true,
-        form: { name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location: '', image_url: '' }
+        form: { name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
       };
     },
     async saveSupply() {
       const f = this.supplyModal.form;
       if (!f.name) { alert("请填写物品名称！"); return; }
       this.isUploading = true;
-      const payload = { name: f.name, category: f.category, season: f.season, quantity: Number(f.quantity), unit: f.unit, expire_date: f.expire_date || null, low_stock: Number(f.low_stock), location: f.location, image_url: f.image_url };
+      const payload = { 
+        name: f.name, category: f.category, season: f.season, 
+        quantity: Number(f.quantity), unit: f.unit, 
+        expire_date: f.expire_date || null, low_stock: Number(f.low_stock), 
+        location_id: f.location_id, image_url: f.image_url 
+      };
       try {
         await this.supabase.from('supplies').insert([payload]);
         this.supplyModal.show = false;
@@ -802,10 +824,12 @@ createApp({
     // --- 通用方法 ---
     getLocationName(locId) {
       const loc = this.locationsData.find(l => l.id === locId);
-      return loc ? `${loc.code} - ${loc.name}` : '未知位置';
+      return loc ? `${loc.code} - ${loc.name}` : '';
     },
     getItemsCountInLoc(locId) {
-      return this.wardrobeData.filter(item => item.location_id === locId).length;
+      const wCount = this.wardrobeData.filter(item => item.location_id === locId).length;
+      const sCount = this.suppliesData.filter(item => item.location_id === locId).length;
+      return wCount + sCount;
     },
     getDaysLeft(expireDate) {
       if (!expireDate) return 999;
