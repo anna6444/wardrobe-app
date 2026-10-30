@@ -8,7 +8,6 @@
   <!-- 依赖库 -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- 💡 核心：图片压缩库 -->
   <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
   <style>
@@ -35,6 +34,7 @@
     .tag.blue { background: #e6f0fa; color: #2b579b; }
     .tag.red { background: #fce8e8; color: #d14a4a; font-weight: 600;}
     .tag.orange { background: #fff1e6; color: #c46838; }
+    .tag.green { background: #eaf6ec; color: #2b703b; }
 
     /* 顶部筛选 */
     .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
@@ -47,7 +47,7 @@
     .item-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f9f9f9; display: block; }
     .item-info { padding: 12px; }
     .item-name { font-weight: 600; font-size: 15px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .item-meta { font-size: 12px; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+    .item-meta { font-size: 12px; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;}
     
     /* 日用品列表 */
     .list-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px dashed #eee; }
@@ -64,14 +64,18 @@
     input, select { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s;}
     input:focus, select:focus { border-color: #e6703b; background: #fff; }
     
-    .upload-box { border: 2px dashed #ddd; border-radius: 12px; padding: 20px; text-align: center; position: relative; overflow: hidden; margin-bottom: 14px; }
-    .upload-box input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .upload-preview { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-top: 10px; }
+    /* 上传UI */
+    .upload-box { border: 2px dashed #ddd; border-radius: 12px; padding: 10px; text-align: center; position: relative; overflow: hidden; margin-bottom: 14px; min-height: 80px; display: flex; align-items: center; justify-content: center; flex-direction: column;}
+    .upload-box input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 10;}
+    .upload-box.small { padding: 5px; min-height: 60px; }
+    .upload-box .success-text { font-size: 13px; color: #2b703b; font-weight: 600; margin-top: 6px; background: #eaf6ec; padding: 4px 10px; border-radius: 20px;}
+    .upload-preview { height: 80px; width: 80px; object-fit: cover; border-radius: 8px; }
+    .upload-preview.small { height: 60px; width: 60px; }
 
     .empty-text { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
     
     /* 加载遮罩 */
-    .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
+    .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
     .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e6703b; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;}
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
@@ -83,7 +87,7 @@
   <div class="loading-mask" v-if="isUploading">
     <div class="spinner"></div>
     <div style="font-weight: 600; color: #e6703b;">正在压缩并上传...</div>
-    <div style="font-size: 12px; color: #999; margin-top: 6px;">极致压缩中，请稍候</div>
+    <div style="font-size: 12px; color: #999; margin-top: 6px;">请勿关闭页面</div>
   </div>
 
   <div class="container">
@@ -95,7 +99,6 @@
         <p style="color: #666; font-size: 14px; margin-top: 8px;">今天有什么需要整理的？</p>
       </div>
 
-      <!-- 日用品预警 -->
       <div class="card" v-if="urgentSupplies.length > 0">
         <h2 style="color: #d14a4a;">🚨 日用品紧急提醒</h2>
         <div v-for="item in urgentSupplies" :key="item.id" class="row-danger">
@@ -108,7 +111,6 @@
         <button class="btn small" style="width: 100%; margin-top: 10px;" @click="view='todo'">去查看采购清单</button>
       </div>
 
-      <!-- 孩子尺码预警 -->
       <div class="card">
         <h2>👧 孩子衣物空间</h2>
         <div style="display: flex; justify-content: space-between; margin-top: 12px;">
@@ -142,7 +144,14 @@
           <div class="item-info">
             <div class="item-name">{{ item.name }}</div>
             <div class="item-meta"><span class="tag blue">{{ item.size }}</span> {{ item.category }}</div>
-            <div class="item-meta" style="color: #e6703b;">📍 {{ item.location }}</div>
+            
+            <div class="item-meta" style="color: #e6703b; font-weight: 600;">
+              📍 {{ item.location }} 
+              <span v-if="item.location_code" class="tag orange" style="margin-left: 4px; font-weight: bold;">编号: {{ item.location_code }}</span>
+            </div>
+            <div v-if="item.location_image_url" style="font-size: 11px; color: #999; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+              <img :src="item.location_image_url" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;" /> 已拍位置
+            </div>
           </div>
         </div>
       </div>
@@ -158,6 +167,8 @@
         <div class="filter-btn" :class="{active: filterSupply==='纸品'}" @click="filterSupply='纸品'">纸品</div>
         <div class="filter-btn" :class="{active: filterSupply==='清洁'}" @click="filterSupply='清洁'">清洁</div>
         <div class="filter-btn" :class="{active: filterSupply==='洗护'}" @click="filterSupply='洗护'">洗护</div>
+        <div class="filter-btn" :class="{active: filterSupply==='药品'}" @click="filterSupply='药品'">药品</div>
+        <div class="filter-btn" :class="{active: filterSupply==='被子/床品'}" @click="filterSupply='被子/床品'">被子/床品</div>
       </div>
 
       <div class="card">
@@ -182,7 +193,7 @@
             <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click="adjustSupply(item, 1)">+</button>
           </div>
         </div>
-        <div v-if="filteredSupplies.length === 0" class="empty-text">暂无日用品</div>
+        <div v-if="filteredSupplies.length === 0" class="empty-text">暂无该分类物品</div>
       </div>
 
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddSupply">+</button>
@@ -208,7 +219,6 @@
     <!-- ================= 我的 ================= -->
     <div v-if="view === 'setting'">
       
-      <!-- 隐藏敏感配置，只显示状态和按钮 -->
       <div class="card">
         <h2>☁️ 云端同步状态</h2>
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; margin-top: 8px;">
@@ -247,13 +257,17 @@
     <div class="modal-box">
       <h3 style="margin-bottom: 16px;">{{ modal.isEdit ? '编辑衣物' : '添加衣物' }}</h3>
       
-      <div class="upload-box">
-        <input type="file" accept="image/*" @change="handleFileUpload($event, 'wardrobe')" />
-        <div v-if="!modal.form.image_url" style="color: #999;">
-          <div style="font-size: 24px; margin-bottom: 8px;">📷</div>
-          点击拍照或上传图片
-        </div>
-        <img v-else :src="modal.form.image_url" class="upload-preview" />
+      <label>衣物照片</label>
+      <div class="upload-box" style="flex-direction: row; gap: 10px;">
+        <input type="file" accept="image/*" @change="handleFileUpload($event, 'wardrobe_main')" :disabled="isUploading" />
+        <template v-if="!modal.form.image_url">
+          <div style="font-size: 24px;">📷</div>
+          <div style="color: #999; font-size: 14px;">点击拍照或上传图片</div>
+        </template>
+        <template v-else>
+          <img :src="modal.form.image_url" class="upload-preview" />
+          <div class="success-text">✅ 已上传成功，点击更换</div>
+        </template>
       </div>
 
       <div class="input-wrap">
@@ -267,7 +281,7 @@
         </select>
       </div>
       <div class="input-wrap">
-        <label>衣物名称</label>
+        <label>衣物名称 <span style="color:red">*</span></label>
         <input v-model="modal.form.name" placeholder="例如：红色羽绒服 / 运动鞋" />
       </div>
       <div style="display: flex; gap: 10px;">
@@ -286,14 +300,36 @@
           <input v-model="modal.form.size" placeholder="如：140 / 37码" />
         </div>
       </div>
-      <div class="input-wrap">
-        <label>存放位置 (非常重要！)</label>
-        <input v-model="modal.form.location" placeholder="如：主卧衣柜上层 / 床底收纳箱A" />
+
+      <div style="border-top: 1px dashed #eee; margin: 10px 0 14px 0; padding-top: 14px;">
+        <div class="input-wrap">
+          <label>存放位置 <span style="color:red">*</span></label>
+          <input v-model="modal.form.location" placeholder="如：主卧衣柜上层 / 床底收纳箱A" />
+        </div>
+        <div class="input-wrap">
+          <label>收纳袋/箱编号 (方便找)</label>
+          <input v-model="modal.form.location_code" placeholder="如：A-01, 3号箱" />
+        </div>
+        
+        <label>存放位置照片 (拍一下箱子长啥样)</label>
+        <div class="upload-box small" style="flex-direction: row; gap: 10px;">
+          <input type="file" accept="image/*" @change="handleFileUpload($event, 'wardrobe_loc')" :disabled="isUploading" />
+          <template v-if="!modal.form.location_image_url">
+            <div style="font-size: 20px;">📸</div>
+            <div style="color: #999; font-size: 13px;">上传位置照片</div>
+          </template>
+          <template v-else>
+            <img :src="modal.form.location_image_url" class="upload-preview small" />
+            <div class="success-text" style="font-size: 12px;">✅ 已上传，点击更换</div>
+          </template>
+        </div>
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button v-if="modal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; flex: 1;" @click="deleteWardrobe">删除</button>
-        <button class="btn" style="flex: 2;" @click="saveWardrobe">保存入库</button>
+        <button class="btn" style="flex: 2;" @click="saveWardrobe" :disabled="isUploading">
+          {{ isUploading ? '上传中...' : '保存入库' }}
+        </button>
       </div>
     </div>
   </div>
@@ -303,18 +339,22 @@
     <div class="modal-box">
       <h3 style="margin-bottom: 16px;">添加日用品</h3>
       
-      <div class="upload-box">
-        <input type="file" accept="image/*" @change="handleFileUpload($event, 'supply')" />
-        <div v-if="!supplyModal.form.image_url" style="color: #999;">
-          <div style="font-size: 24px; margin-bottom: 8px;">📷</div>
-          点击拍照或上传图片
-        </div>
-        <img v-else :src="supplyModal.form.image_url" class="upload-preview" />
+      <label>物品照片</label>
+      <div class="upload-box" style="flex-direction: row; gap: 10px;">
+        <input type="file" accept="image/*" @change="handleFileUpload($event, 'supply')" :disabled="isUploading" />
+        <template v-if="!supplyModal.form.image_url">
+          <div style="font-size: 24px;">📷</div>
+          <div style="color: #999; font-size: 14px;">点击拍照或上传图片</div>
+        </template>
+        <template v-else>
+          <img :src="supplyModal.form.image_url" class="upload-preview" />
+          <div class="success-text">✅ 已上传成功，点击更换</div>
+        </template>
       </div>
 
       <div class="input-wrap">
-        <label>物品名称</label>
-        <input v-model="supplyModal.form.name" placeholder="例如：抽纸 / 洗衣液" />
+        <label>物品名称 <span style="color:red">*</span></label>
+        <input v-model="supplyModal.form.name" placeholder="例如：抽纸 / 洗衣液 / 感冒药" />
       </div>
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
@@ -324,6 +364,7 @@
             <option value="清洁">清洁</option>
             <option value="洗护">洗护</option>
             <option value="药品">药品</option>
+            <option value="被子/床品">被子/床品</option>
             <option value="其他">其他</option>
           </select>
         </div>
@@ -339,7 +380,7 @@
         </div>
         <div class="input-wrap" style="flex: 1;">
           <label>单位</label>
-          <input v-model="supplyModal.form.unit" placeholder="如：包 / 瓶" />
+          <input v-model="supplyModal.form.unit" placeholder="如：包 / 瓶 / 床" />
         </div>
       </div>
       <div style="display: flex; gap: 10px;">
@@ -353,11 +394,13 @@
         </div>
       </div>
 
-      <button class="btn" style="width: 100%; margin-top: 20px;" @click="saveSupply">保存入库</button>
+      <button class="btn" style="width: 100%; margin-top: 20px;" @click="saveSupply" :disabled="isUploading">
+        {{ isUploading ? '上传中...' : '保存入库' }}
+      </button>
     </div>
   </div>
 
-  <!-- ================= 💡 新增弹窗：云端连接配置 ================= -->
+  <!-- ================= 弹窗：云端连接配置 ================= -->
   <div class="modal-mask" v-if="showConfigModal" @click.self="showConfigModal=false">
     <div class="modal-box">
       <h3 style="margin-bottom: 16px;">☁️ 云端连接配置</h3>
@@ -374,7 +417,6 @@
         <label>Anon Public Key</label>
         <div style="position: relative;">
           <input v-model="sbConfig.key" :type="showKey ? 'text' : 'password'" placeholder="eyJhbGciOi..." style="padding-right: 40px;" />
-          <!-- 💡 小眼睛按钮，方便查看是否填错 -->
           <button @click="showKey = !showKey" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 16px; cursor: pointer;">
             {{ showKey ? '🙈' : '👁️' }}
           </button>
@@ -399,29 +441,24 @@ createApp({
       view: 'home',
       isUploading: false,
       
-      // 弹窗控制
-      showConfigModal: false, // 控制云端配置弹窗
-      showKey: false,         // 控制 Key 是否明文显示
+      showConfigModal: false,
+      showKey: false,
       
-      // Supabase 配置
       sbConfig: {
         url: localStorage.getItem('sb_url') || '',
         key: localStorage.getItem('sb_key') || ''
       },
       supabase: null,
       
-      // 数据
       wardrobeData: [],
       suppliesData: [],
       
-      // 筛选状态
       filterOwner: 'all',
       filterSupply: 'all',
       
-      // 表单弹窗控制
       modal: {
         show: false, isEdit: false,
-        form: { id: null, owner: 'dad', name: '', category: '上衣', size: '', location: '', image_url: '' }
+        form: { id: null, owner: 'dad', name: '', category: '上衣', size: '', location: '', location_code: '', location_image_url: '', image_url: '' }
       },
       supplyModal: {
         show: false,
@@ -469,7 +506,8 @@ createApp({
         this.supabase = supabase.createClient(this.sbConfig.url, this.sbConfig.key);
         this.fetchData();
       } catch(e) {
-        alert("连接 Supabase 失败，请检查配置");
+        console.error(e);
+        alert("初始化云端连接失败，请检查 URL 和 Key。");
       }
     },
 
@@ -489,32 +527,31 @@ createApp({
 
     async fetchData() {
       if (!this.supabase) return;
-      
-      // 拉取衣物
-      const { data: wardrobe, error: err1 } = await this.supabase.from('wardrobe').select('*').order('created_at', { ascending: false });
-      if (!err1 && wardrobe) this.wardrobeData = wardrobe;
-      
-      // 拉取日用品
-      const { data: supplies, error: err2 } = await this.supabase.from('supplies').select('*').order('created_at', { ascending: false });
-      if (!err2 && supplies) this.suppliesData = supplies;
+      try {
+        const { data: wardrobe, error: err1 } = await this.supabase.from('wardrobe').select('*').order('created_at', { ascending: false });
+        if (!err1 && wardrobe) this.wardrobeData = wardrobe;
+        
+        const { data: supplies, error: err2 } = await this.supabase.from('supplies').select('*').order('created_at', { ascending: false });
+        if (!err2 && supplies) this.suppliesData = supplies;
+      } catch (e) {
+        console.error("拉取数据失败:", e);
+      }
     },
 
-    // 💡 核心：前端图片压缩
     async handleFileUpload(event, target) {
       const file = event.target.files[0];
-      if (!file || !this.supabase) return;
+      if (!file) return;
+      
+      if (!this.supabase) {
+        alert("⚠️ 请先去【设置】页面配置云端连接！");
+        return;
+      }
 
       this.isUploading = true;
       try {
-        // 1. 极致压缩配置：最大 800px，体积控制在 0.2MB 以内
-        const options = {
-          maxSizeMB: 0.2,
-          maxWidthOrHeight: 800,
-          useWebWorker: true
-        };
+        const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: true };
         const compressedFile = await imageCompression(file, options);
         
-        // 2. 生成文件名并上传
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
         const { data, error } = await this.supabase.storage
           .from('wardrobe')
@@ -522,52 +559,81 @@ createApp({
 
         if (error) throw error;
 
-        // 3. 获取公开链接
         const { data: { publicUrl } } = this.supabase.storage.from('wardrobe').getPublicUrl(fileName);
 
-        // 4. 赋值给表单
-        if (target === 'wardrobe') this.modal.form.image_url = publicUrl;
+        if (target === 'wardrobe_main') this.modal.form.image_url = publicUrl;
+        if (target === 'wardrobe_loc') this.modal.form.location_image_url = publicUrl;
         if (target === 'supply') this.supplyModal.form.image_url = publicUrl;
         
       } catch (error) {
-        alert("上传失败：" + error.message);
+        console.error(error);
+        alert("上传失败：" + (error.message || "未知错误"));
       } finally {
         this.isUploading = false;
+        // 清空 input，防止选同一张图不触发 change
+        event.target.value = '';
       }
     },
 
-    // --- 衣物逻辑 ---
     openAddWardrobe() {
       this.modal = {
         show: true, isEdit: false,
-        form: { id: null, owner: this.filterOwner === 'all' ? 'dad' : this.filterOwner, name: '', category: '上衣', size: '', location: '', image_url: '' }
+        form: { id: null, owner: this.filterOwner === 'all' ? 'dad' : this.filterOwner, name: '', category: '上衣', size: '', location: '', location_code: '', location_image_url: '', image_url: '' }
       };
     },
     openEditWardrobe(item) {
       this.modal = { show: true, isEdit: true, form: { ...item } };
     },
     async saveWardrobe() {
-      const f = this.modal.form;
-      if (!f.name || !f.location) { alert("请填写名称和存放位置"); return; }
-      
-      const payload = { owner: f.owner, name: f.name, category: f.category, size: f.size, location: f.location, image_url: f.image_url };
-
-      if (this.modal.isEdit) {
-        await this.supabase.from('wardrobe').update(payload).eq('id', f.id);
-      } else {
-        await this.supabase.from('wardrobe').insert([payload]);
+      if (!this.supabase) {
+        alert("⚠️ 请先去【设置】页面配置云端连接！");
+        return;
       }
-      this.modal.show = false;
-      this.fetchData();
+      
+      const f = this.modal.form;
+      if (!f.name || !f.location) { 
+        alert("请务必填写【衣物名称】和【存放位置】！"); 
+        return; 
+      }
+      
+      this.isUploading = true; // 借用遮罩层防止连点
+      const payload = { 
+        owner: f.owner, name: f.name, category: f.category, size: f.size, 
+        location: f.location, location_code: f.location_code, 
+        location_image_url: f.location_image_url, image_url: f.image_url 
+      };
+
+      try {
+        if (this.modal.isEdit) {
+          const { error } = await this.supabase.from('wardrobe').update(payload).eq('id', f.id);
+          if (error) throw error;
+        } else {
+          const { error } = await this.supabase.from('wardrobe').insert([payload]);
+          if (error) throw error;
+        }
+        this.modal.show = false;
+        await this.fetchData();
+      } catch (err) {
+        alert("保存失败：" + err.message);
+        console.error(err);
+      } finally {
+        this.isUploading = false;
+      }
     },
     async deleteWardrobe() {
       if (!confirm("确定删除这件衣物吗？")) return;
-      await this.supabase.from('wardrobe').delete().eq('id', this.modal.form.id);
-      this.modal.show = false;
-      this.fetchData();
+      this.isUploading = true;
+      try {
+        await this.supabase.from('wardrobe').delete().eq('id', this.modal.form.id);
+        this.modal.show = false;
+        await this.fetchData();
+      } catch(err) {
+        alert("删除失败：" + err.message);
+      } finally {
+        this.isUploading = false;
+      }
     },
 
-    // --- 日用品逻辑 ---
     openAddSupply() {
       this.supplyModal = {
         show: true,
@@ -575,22 +641,43 @@ createApp({
       };
     },
     async saveSupply() {
-      const f = this.supplyModal.form;
-      if (!f.name) { alert("请填写物品名称"); return; }
+      if (!this.supabase) {
+        alert("⚠️ 请先去【设置】页面配置云端连接！");
+        return;
+      }
       
+      const f = this.supplyModal.form;
+      if (!f.name) { 
+        alert("请填写物品名称！"); 
+        return; 
+      }
+      
+      this.isUploading = true;
       const payload = { name: f.name, category: f.category, quantity: Number(f.quantity), unit: f.unit, expire_date: f.expire_date || null, low_stock: Number(f.low_stock), location: f.location, image_url: f.image_url };
       
-      await this.supabase.from('supplies').insert([payload]);
-      this.supplyModal.show = false;
-      this.fetchData();
+      try {
+        const { error } = await this.supabase.from('supplies').insert([payload]);
+        if (error) throw error;
+        
+        this.supplyModal.show = false;
+        await this.fetchData();
+      } catch (err) {
+        alert("保存失败：" + err.message);
+        console.error(err);
+      } finally {
+        this.isUploading = false;
+      }
     },
     async adjustSupply(item, delta) {
+      if (!this.supabase) return;
       const newQty = Math.max(0, Number(item.quantity) + delta);
-      item.quantity = newQty; // 前端立刻响应
-      await this.supabase.from('supplies').update({ quantity: newQty }).eq('id', item.id);
+      item.quantity = newQty;
+      const { error } = await this.supabase.from('supplies').update({ quantity: newQty }).eq('id', item.id);
+      if (error) {
+        alert("修改库存失败，请检查网络");
+      }
     },
 
-    // --- 通用方法 ---
     getDaysLeft(expireDate) {
       if (!expireDate) return 999;
       const today = new Date();
