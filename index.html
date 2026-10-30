@@ -207,19 +207,20 @@
 
     <!-- ================= 我的 ================= -->
     <div v-if="view === 'setting'">
+      
+      <!-- 隐藏敏感配置，只显示状态和按钮 -->
       <div class="card">
-        <h2>☁️ 云端连接状态</h2>
-        <p style="font-size: 13px; color: #666; margin-bottom: 14px;">请配置你的 Supabase 数据库以同步数据和图片。</p>
-        
-        <div class="input-wrap">
-          <label>Supabase URL</label>
-          <input v-model="sbConfig.url" placeholder="https://xxxx.supabase.co" />
+        <h2>☁️ 云端同步状态</h2>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; margin-top: 8px;">
+          <div :style="{ width: '10px', height: '10px', borderRadius: '50%', background: (sbConfig.url && sbConfig.key) ? '#2b703b' : '#d14a4a' }"></div>
+          <p style="font-size: 14px; color: #333; font-weight: 600;">
+            {{ (sbConfig.url && sbConfig.key) ? '已成功连接云端服务器' : '尚未配置云端连接' }}
+          </p>
         </div>
-        <div class="input-wrap">
-          <label>Supabase Anon Key</label>
-          <input v-model="sbConfig.key" type="password" placeholder="eyJh..." />
-        </div>
-        <button class="btn" style="width: 100%; background: #4A90E2;" @click="saveConfig">保存并连接</button>
+        <p style="font-size: 12px; color: #999; margin-bottom: 16px;">配置后，全家人的衣物和日用品数据实时共享。</p>
+        <button class="btn" style="width: 100%; background: #4A90E2;" @click="showConfigModal = true">
+          ⚙️ 修改云端连接配置
+        </button>
       </div>
 
       <div class="card" style="background: #eaf6ec; border: 1px solid #cce5d2;">
@@ -343,7 +344,7 @@
       </div>
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
-          <label>低库存提醒值 (<=)</label>
+          <label>低库存提醒值 (≤)</label>
           <input type="number" v-model="supplyModal.form.low_stock" placeholder="如：2" />
         </div>
         <div class="input-wrap" style="flex: 1;">
@@ -353,6 +354,37 @@
       </div>
 
       <button class="btn" style="width: 100%; margin-top: 20px;" @click="saveSupply">保存入库</button>
+    </div>
+  </div>
+
+  <!-- ================= 💡 新增弹窗：云端连接配置 ================= -->
+  <div class="modal-mask" v-if="showConfigModal" @click.self="showConfigModal=false">
+    <div class="modal-box">
+      <h3 style="margin-bottom: 16px;">☁️ 云端连接配置</h3>
+      <p style="font-size: 13px; color: #666; margin-bottom: 16px; line-height: 1.5;">
+        请去 Supabase 后台 ➡️ <b>Project Settings</b> ➡️ <b>API</b> 中复制以下两项。配置仅保存在你的本地设备。
+      </p>
+      
+      <div class="input-wrap">
+        <label>Project URL</label>
+        <input v-model="sbConfig.url" placeholder="https://xxxx.supabase.co" />
+      </div>
+      
+      <div class="input-wrap">
+        <label>Anon Public Key</label>
+        <div style="position: relative;">
+          <input v-model="sbConfig.key" :type="showKey ? 'text' : 'password'" placeholder="eyJhbGciOi..." style="padding-right: 40px;" />
+          <!-- 💡 小眼睛按钮，方便查看是否填错 -->
+          <button @click="showKey = !showKey" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 16px; cursor: pointer;">
+            {{ showKey ? '🙈' : '👁️' }}
+          </button>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-top: 24px;">
+        <button class="btn secondary" style="flex: 1;" @click="showConfigModal=false">取消</button>
+        <button class="btn" style="flex: 1; background: #4A90E2;" @click="saveConfig">保存并连接</button>
+      </div>
     </div>
   </div>
 
@@ -366,6 +398,10 @@ createApp({
     return {
       view: 'home',
       isUploading: false,
+      
+      // 弹窗控制
+      showConfigModal: false, // 控制云端配置弹窗
+      showKey: false,         // 控制 Key 是否明文显示
       
       // Supabase 配置
       sbConfig: {
@@ -382,7 +418,7 @@ createApp({
       filterOwner: 'all',
       filterSupply: 'all',
       
-      // 弹窗控制
+      // 表单弹窗控制
       modal: {
         show: false, isEdit: false,
         form: { id: null, owner: 'dad', name: '', category: '上衣', size: '', location: '', image_url: '' }
@@ -428,6 +464,7 @@ createApp({
   
   methods: {
     initSupabase() {
+      if (!this.sbConfig.url || !this.sbConfig.key) return;
       try {
         this.supabase = supabase.createClient(this.sbConfig.url, this.sbConfig.key);
         this.fetchData();
@@ -437,10 +474,17 @@ createApp({
     },
 
     saveConfig() {
-      localStorage.setItem('sb_url', this.sbConfig.url);
-      localStorage.setItem('sb_key', this.sbConfig.key);
+      if (!this.sbConfig.url.trim() || !this.sbConfig.key.trim()) {
+        alert("❌ 请把 URL 和 Key 填完整哦！");
+        return;
+      }
+      
+      localStorage.setItem('sb_url', this.sbConfig.url.trim());
+      localStorage.setItem('sb_key', this.sbConfig.key.trim());
+      
       this.initSupabase();
-      alert("✅ 配置已保存！正在拉取数据...");
+      this.showConfigModal = false;
+      alert("✅ 配置已保存！正在从云端同步数据...");
     },
 
     async fetchData() {
