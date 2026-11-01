@@ -52,7 +52,7 @@
     .filter-btn.active { background: #e6703b; color: white; border-color: #e6703b; font-weight: 600; }
     .season-select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #e8e2d6; font-size: 14px; background: #fff; color: #555; margin-top: 10px;}
     
-    /* 视图切换按钮 */
+    /* 视图切换 */
     .view-toggle { display: flex; background: #e8e2d6; border-radius: 12px; padding: 4px; margin-top: 10px; }
     .view-toggle div { flex: 1; text-align: center; padding: 10px; border-radius: 8px; font-size: 15px; cursor: pointer; color: #666; transition: all 0.2s;}
     .view-toggle div.active { background: #fff; color: #e6703b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: bold;}
@@ -94,13 +94,9 @@
     input, select, textarea { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s; min-width: 0; min-height: 46px;}
     input:focus, select:focus, textarea:focus { border-color: #e6703b; background: #fff; }
     
-    /* 针对日期框的特殊优化 */
+    /* 日期框 */
     input[type="date"] { 
-      appearance: none; 
-      -webkit-appearance: none; 
-      display: flex; 
-      align-items: center; 
-      position: relative;
+      appearance: none; -webkit-appearance: none; display: flex; align-items: center; position: relative;
       background: #faf9f7 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>') no-repeat right 12px center;
       background-size: 18px;
     }
@@ -133,7 +129,7 @@
     .img-preview-box img { max-width: 95vw; max-height: 75vh; border-radius: 8px; object-fit: contain; }
     .poster-actions { width: 100%; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 20px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);}
     
-    /* 生成的海报弹窗 (带原生保存分享) */
+    /* 生成的海报弹窗 */
     .poster-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; padding-bottom: env(safe-area-inset-bottom); }
     .poster-img { max-width: 100%; max-height: 65vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .poster-btn-group { display: flex; gap: 16px; margin-top: 20px; width: 100%; max-width: 400px; }
@@ -145,7 +141,7 @@
     .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e6703b; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;}
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* 采购清单入库操作区 */
+    /* 采购清单操作区 */
     .todo-action-bar { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
     .qty-input { width: 60px; text-align: center; padding: 6px; border-radius: 8px; border: 1px solid #ddd; font-weight: bold; min-height: 32px;}
     .btn-stock-in { background: #2b703b; padding: 6px 12px; font-size: 13px; border-radius: 8px; }
@@ -168,7 +164,7 @@
     </div>
   </div>
 
-  <!-- 💡 分享海报预览 (点击任意地方，直接全关) -->
+  <!-- 分享海报预览 (点击任意地方全关) -->
   <div class="poster-modal" v-if="posterUrl" @click="closeAllModals">
     <img :src="posterUrl" class="poster-img" @click.stop />
     <div class="poster-btn-group" @click.stop>
@@ -370,6 +366,11 @@
           <div class="item-info-grid">
             <div class="item-name" style="color: #e6703b;">{{ loc.code }}</div>
             <div class="item-meta">{{ loc.name }}</div>
+            <!-- 💡 新增：内涵标签 -->
+            <div class="item-meta" style="font-size: 11px; color: #888; margin-top: 4px;">
+              <span v-if="getLocItemsSummary(loc.id).w > 0">👕{{ getLocItemsSummary(loc.id).w }} </span>
+              <span v-if="getLocItemsSummary(loc.id).s > 0">🧻{{ getLocItemsSummary(loc.id).s }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -379,7 +380,12 @@
         <div class="item-card-list" v-for="loc in filteredLocations" :key="loc.id" @click="openStorageDetail(loc)">
           <div class="item-info-list">
             <div class="item-name" style="color: #e6703b; font-size: 16px;">{{ loc.code }} - {{ loc.name }}</div>
-            <div class="item-meta" style="margin-top: 6px;">📦 共 {{ getItemsCountInLoc(loc.id) }} 件物品</div>
+            <div class="item-meta" style="margin-top: 6px;">
+              📦 共 {{ getItemsCountInLoc(loc.id) }} 件物品 
+              <span style="color: #888; margin-left: 8px;">
+                (👕{{ getLocItemsSummary(loc.id).w }} 🧻{{ getLocItemsSummary(loc.id).s }})
+              </span>
+            </div>
             <div class="item-meta" style="font-size: 12px; color: #999;">{{ loc.description }}</div>
           </div>
           <img :src="loc.image_url || 'https://via.placeholder.com/100?text=Box'" class="item-img-list" @click.stop="previewImage = loc.image_url" />
@@ -744,7 +750,10 @@
       </div>
 
       <div class="input-wrap" style="background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
-        <label style="color: #d14a4a; font-weight: 600;">📍 存放在哪个收纳袋/箱？ <span style="color:red">*</span></label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="color: #d14a4a; font-weight: 600; margin: 0;">📍 存放在哪个收纳袋/箱？ <span style="color:red">*</span></label>
+          <button v-if="locationsData.length === 0" class="btn small" style="background:#4A90E2; padding: 4px 8px; font-size: 12px;" @click="locModal.show = true">+ 快速新建</button>
+        </div>
         <select v-model="modal.form.location_id" style="border-color: #fce8e8;">
           <option :value="null">-- 请选择存放位置 --</option>
           <option v-for="loc in locationsData" :key="loc.id" :value="loc.id">
@@ -818,7 +827,10 @@
       </div>
 
       <div class="input-wrap" style="background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
-        <label style="color: #d14a4a; font-weight: 600;">📍 存放在哪？</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="color: #d14a4a; font-weight: 600; margin: 0;">📍 存放在哪？</label>
+          <button v-if="locationsData.length === 0" class="btn small" style="background:#4A90E2; padding: 4px 8px; font-size: 12px;" @click="locModal.show = true">+ 快速新建</button>
+        </div>
         <select v-model="supplyModal.form.location_id" style="border-color: #fce8e8;">
           <option :value="null">-- 请选择收纳位置 --</option>
           <option v-for="loc in locationsData" :key="loc.id" :value="loc.id">
@@ -1115,7 +1127,7 @@ createApp({
       }
     },
 
-    // 关闭所有弹窗（图片预览、海报）
+    // 💡 极简操作：关闭所有弹窗
     closeAllModals() {
       this.previewImage = '';
       this.posterUrl = '';
@@ -1157,18 +1169,16 @@ createApp({
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // 画布大瘦身：宽度 800，高度 1400 (图片各 600，底部 200)
+        // 💡 画布大小：宽度 800，高度 1400 (图片各 600，底部 200)
         const canvasW = 800;
         const imgH = 600;
         const canvasH = 1400;
         canvas.width = canvasW;
         canvas.height = canvasH;
         
-        // 背景
         ctx.fillStyle = '#f9f6ef';
         ctx.fillRect(0, 0, canvasW, canvasH);
         
-        // 绘制图片的辅助函数，保证图片铺满指定区域
         const drawImageCover = (image, x, y, w, h) => {
           const imgRatio = image.width / image.height;
           const boxRatio = w / h;
@@ -1187,21 +1197,20 @@ createApp({
           ctx.drawImage(image, sx, sy, sWidth, sHeight, x, y, w, h);
         };
 
-        // 1. 上半部分画物品图 (0, 0, 800, 600)
+        // 1. 上半部分
         drawImageCover(mainImg, 0, 0, canvasW, imgH);
         
-        // 2. 下半部分画收纳箱图 (0, 600, 800, 600)
+        // 2. 下半部分
         if (locImg) {
           drawImageCover(locImg, 0, imgH, canvasW, imgH);
         }
         
-        // 3. 底部画文字区 (0, 1200, 800, 200)
+        // 3. 文字区
         const cardH = 200;
         const cardY = 1200;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, cardY, canvasW, cardH);
         
-        // 绘制文字信息
         ctx.fillStyle = '#333333';
         ctx.font = 'bold 40px sans-serif';
         ctx.fillText(item.name, 40, cardY + 60);
@@ -1217,7 +1226,6 @@ createApp({
         const locName = this.getLocationName(item.location_id) || item.location || '未指定位置';
         ctx.fillText(`📍 存放于: ${locName}`, 40, cardY + 170);
         
-        // 水印
         ctx.fillStyle = '#cccccc';
         ctx.font = '20px sans-serif';
         ctx.textAlign = 'right';
@@ -1235,7 +1243,6 @@ createApp({
         const byteArray = new Uint8Array(byteNumbers);
         this.posterFile = new File([byteArray], `收纳_${Date.now()}.jpg`, { type: 'image/jpeg' });
         
-        // 生成完图后，把底层的图片预览关掉，免得重叠
         this.previewImage = '';
         
       } catch (e) {
@@ -1246,7 +1253,6 @@ createApp({
       }
     },
 
-    // 一键保存图片
     savePoster() {
       if (!this.posterFile) return;
       const url = URL.createObjectURL(this.posterFile);
@@ -1258,13 +1264,11 @@ createApp({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      // iOS 提示去文件里找
       if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
         alert("已开始下载。如果相册未找到，请去手机【文件】App中查看，或直接长按上方图片保存。");
       }
     },
 
-    // 一键分享
     async sharePosterToWX() {
       if (!this.posterFile) return;
       
@@ -1438,6 +1442,13 @@ createApp({
 
       this.isUploading = true;
       try {
+        // 💡 如果存在图片，尝试从云端同步删除，释放空间
+        if (item.image_url) {
+          const urlParts = item.image_url.split('/');
+          const fileName = urlParts[urlParts.length - 1];
+          await this.supabase.storage.from('wardrobe').remove([fileName]);
+        }
+
         if (type === 'wardrobe') {
           await this.supabase.from('wardrobe').delete().eq('id', item.id);
         } else {
@@ -1482,6 +1493,13 @@ createApp({
       return [...wItems, ...sItems];
     },
 
+    // 💡 新增：获取箱子内的分类统计
+    getLocItemsSummary(locId) {
+      const w = this.wardrobeData.filter(item => item.location_id === locId).length;
+      const s = this.suppliesData.filter(item => item.location_id === locId).length;
+      return { w, s };
+    },
+
     toggleStorageBatchMode() {
       this.storageDetailBatchMode = !this.storageDetailBatchMode;
       if (this.storageDetailBatchMode) this.isCopyMode = false; 
@@ -1521,6 +1539,15 @@ createApp({
         const wIds = this.selectedStorageItems.filter(i => i.type === 'wardrobe').map(i => i.id);
         const sIds = this.selectedStorageItems.filter(i => i.type === 'supply').map(i => i.id);
         
+        // 💡 批量删除云端图片
+        for (let item of this.selectedStorageItems) {
+          if (item.image_url) {
+            const urlParts = item.image_url.split('/');
+            const fileName = urlParts[urlParts.length - 1];
+            await this.supabase.storage.from('wardrobe').remove([fileName]);
+          }
+        }
+
         if (wIds.length > 0) await this.supabase.from('wardrobe').delete().in('id', wIds);
         if (sIds.length > 0) await this.supabase.from('supplies').delete().in('id', sIds);
         
