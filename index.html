@@ -168,14 +168,14 @@
     </div>
   </div>
 
-  <!-- 💡 分享海报预览 (带一键保存、分享按钮) -->
-  <div class="poster-modal" v-if="posterUrl" @click="posterUrl = ''">
+  <!-- 💡 分享海报预览 (点击任意地方，直接全关) -->
+  <div class="poster-modal" v-if="posterUrl" @click="closeAllModals">
     <img :src="posterUrl" class="poster-img" @click.stop />
     <div class="poster-btn-group" @click.stop>
       <button class="btn secondary" @click="savePoster">📥 保存图片</button>
       <button class="btn" style="background: #07C160;" @click="sharePosterToWX">💬 分享给朋友</button>
     </div>
-    <div class="poster-tips-small">💡 如果保存后相册没有，请长按上方图片保存</div>
+    <div class="poster-tips-small">💡 点击空白处即可直接关闭页面</div>
   </div>
 
   <div class="loading-mask" v-if="isUploading">
@@ -637,7 +637,10 @@
   <!-- ================= 弹窗：新建/编辑 收纳容器 ================= -->
   <div class="modal-mask" v-if="locModal.show" @click.self="locModal.show=false">
     <div class="modal-box">
-      <h3 style="margin-bottom: 16px;">{{ locModal.isEdit ? '编辑收纳位置' : '新建收纳位置' }}</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0;">{{ locModal.isEdit ? '编辑收纳位置' : '新建收纳位置' }}</h3>
+        <button v-if="locModal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; padding: 6px 12px; font-size: 13px; border-radius: 8px;" @click="deleteLocation">删除</button>
+      </div>
       
       <label>容器外观照片 (拍一张即可)</label>
       <div class="upload-box" style="flex-direction: row; gap: 10px;">
@@ -666,7 +669,7 @@
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button v-if="locModal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; flex: 1;" @click="deleteLocation">删除</button>
+        <button class="btn secondary" style="flex: 1;" @click="locModal.show=false">取消</button>
         <button class="btn" style="flex: 2;" @click="saveLocation" :disabled="isUploading">
           {{ isUploading ? '保存中...' : '保存入库' }}
         </button>
@@ -677,7 +680,10 @@
   <!-- ================= 弹窗：添加/编辑衣物 ================= -->
   <div class="modal-mask" v-if="modal.show" @click.self="modal.show=false">
     <div class="modal-box">
-      <h3 style="margin-bottom: 16px;">{{ modal.isEdit ? '编辑衣物' : '添加衣物' }}</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0;">{{ modal.isEdit ? '编辑衣物' : '添加衣物' }}</h3>
+        <button v-if="modal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; padding: 6px 12px; font-size: 13px; border-radius: 8px;" @click="deleteWardrobe">删除</button>
+      </div>
       
       <label>衣物照片</label>
       <div class="upload-box" style="flex-direction: row; gap: 10px;">
@@ -751,7 +757,7 @@
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button v-if="modal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; flex: 1;" @click="deleteWardrobe">删除</button>
+        <button class="btn secondary" style="flex: 1;" @click="modal.show=false">取消</button>
         <button class="btn" style="flex: 2;" @click="saveWardrobe" :disabled="isUploading">
           {{ isUploading ? '保存中...' : '保存修改' }}
         </button>
@@ -762,7 +768,10 @@
   <!-- ================= 弹窗：添加/编辑日用品 ================= -->
   <div class="modal-mask" v-if="supplyModal.show" @click.self="supplyModal.show=false">
     <div class="modal-box">
-      <h3 style="margin-bottom: 16px;">{{ supplyModal.isEdit ? '编辑日用品' : '添加日用品' }}</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0;">{{ supplyModal.isEdit ? '编辑日用品' : '添加日用品' }}</h3>
+        <button v-if="supplyModal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; padding: 6px 12px; font-size: 13px; border-radius: 8px;" @click="deleteSupply">删除</button>
+      </div>
       
       <label>物品照片</label>
       <div class="upload-box" style="flex-direction: row; gap: 10px;">
@@ -841,7 +850,7 @@
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button v-if="supplyModal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; flex: 1;" @click="deleteSupply">删除</button>
+        <button class="btn secondary" style="flex: 1;" @click="supplyModal.show=false">取消</button>
         <button class="btn" style="flex: 2;" @click="saveSupply" :disabled="isUploading">
           {{ isUploading ? '保存中...' : '保存' }}
         </button>
@@ -1106,6 +1115,13 @@ createApp({
       }
     },
 
+    // 关闭所有弹窗（图片预览、海报）
+    closeAllModals() {
+      this.previewImage = '';
+      this.posterUrl = '';
+      this.previewItemData = null;
+    },
+
     showPreview(item, type) {
       if (!item.image_url) return;
       this.previewImage = item.image_url;
@@ -1141,7 +1157,7 @@ createApp({
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // 💡 画布大瘦身：宽度 800，高度 1400 (图片各 600，底部 200)
+        // 画布大瘦身：宽度 800，高度 1400 (图片各 600，底部 200)
         const canvasW = 800;
         const imgH = 600;
         const canvasH = 1400;
@@ -1218,6 +1234,9 @@ createApp({
         }
         const byteArray = new Uint8Array(byteNumbers);
         this.posterFile = new File([byteArray], `收纳_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        // 生成完图后，把底层的图片预览关掉，免得重叠
+        this.previewImage = '';
         
       } catch (e) {
         console.error("Canvas Error:", e);
