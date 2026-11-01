@@ -90,7 +90,7 @@
     .input-wrap { margin-bottom: 14px; min-width: 0; }
     label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
     
-    /* 💡 统一输入框高度，修复日期框丑的问题 */
+    /* 统一输入框高度，修复日期框丑的问题 */
     input, select, textarea { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s; min-width: 0; min-height: 46px;}
     input:focus, select:focus, textarea:focus { border-color: #e6703b; background: #fff; }
     
@@ -104,11 +104,7 @@
       background: #faf9f7 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>') no-repeat right 12px center;
       background-size: 18px;
     }
-    /* 修复 iOS 日期文字不居中 */
-    input[type="date"]::-webkit-date-and-time-value {
-      text-align: left;
-      line-height: 20px;
-    }
+    input[type="date"]::-webkit-date-and-time-value { text-align: left; line-height: 20px; }
     
     /* 上传UI */
     .upload-box { border: 2px dashed #ddd; border-radius: 12px; padding: 10px; text-align: center; position: relative; overflow: hidden; margin-bottom: 14px; min-height: 80px; display: flex; align-items: center; justify-content: center; flex-direction: column;}
@@ -131,16 +127,18 @@
     .recent-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 60px; margin: 0 auto; }
     .recent-type { font-size: 9px; color: #999; }
 
-    /* 图片全屏预览 & 海报生成 */
+    /* 💡 图片全屏预览 */
     .img-preview-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .img-preview-box { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; padding: 20px; }
-    .img-preview-box img { max-width: 95vw; max-height: 80vh; border-radius: 8px; object-fit: contain; }
+    .img-preview-box img { max-width: 95vw; max-height: 75vh; border-radius: 8px; object-fit: contain; }
     .poster-actions { width: 100%; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 20px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);}
     
-    /* 生成的海报弹窗 */
-    .poster-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-    .poster-img { max-width: 100%; max-height: 75vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .poster-tips { color: #fff; font-size: 14px; margin-top: 16px; font-weight: 600; text-align: center; }
+    /* 💡 生成的海报弹窗 (极简版) */
+    .poster-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    .poster-img { max-width: 100%; max-height: 80vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .poster-tips { color: #fff; font-size: 15px; margin-top: 16px; font-weight: 600; text-align: center; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+    .poster-close-tip { color: #aaa; font-size: 12px; margin-top: 8px; text-align: center; }
 
     /* 加载遮罩 */
     .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
@@ -170,11 +168,11 @@
     </div>
   </div>
 
-  <!-- 分享海报预览 -->
-  <div class="poster-modal" v-if="posterUrl" @click="posterUrl = ''">
-    <img :src="posterUrl" class="poster-img" />
-    <div class="poster-tips">👇 长按上方图片，选择“保存到手机”或“发送给朋友”</div>
-    <button class="btn secondary" style="margin-top: 20px; width: 100%; max-width: 200px;" @click="posterUrl = ''">关闭</button>
+  <!-- 💡 分享海报预览 (点击任意位置直接全关) -->
+  <div class="poster-modal" v-if="posterUrl" @click="closeAllModals">
+    <img :src="posterUrl" class="poster-img" @click.stop />
+    <div class="poster-tips">👇 请长按上方图片保存到相册</div>
+    <div class="poster-close-tip">保存后，点击任意空白处即可关闭</div>
   </div>
 
   <div class="loading-mask" v-if="isUploading">
@@ -1104,6 +1102,13 @@ createApp({
       }
     },
 
+    // 💡 极简操作：关闭所有弹窗
+    closeAllModals() {
+      this.previewImage = '';
+      this.posterUrl = '';
+      this.previewItemData = null;
+    },
+
     showPreview(item, type) {
       if (!item.image_url) return;
       this.previewImage = item.image_url;
@@ -1139,86 +1144,60 @@ createApp({
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
+        // 画布尺寸：800宽，上下两张 800x800 大图 + 底部文字区
         const canvasW = 800;
-        const canvasH = 1040; 
+        const canvasH = 800 + (locImg ? 800 : 0) + 250; 
         canvas.width = canvasW;
         canvas.height = canvasH;
         
+        // 背景
         ctx.fillStyle = '#f9f6ef';
         ctx.fillRect(0, 0, canvasW, canvasH);
         
-        const imgSize = 720;
-        const imgX = 40;
-        const imgY = 40;
+        // 1. 绘制物品大图（占满全宽 800x800）
+        const mainScale = Math.max(canvasW / mainImg.width, 800 / mainImg.height);
+        const mainDrawW = mainImg.width * mainScale;
+        const mainDrawH = mainImg.height * mainScale;
+        ctx.drawImage(mainImg, (canvasW - mainDrawW)/2, (800 - mainDrawH)/2, mainDrawW, mainDrawH);
         
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(imgX, imgY, imgSize, imgSize);
+        let textY = 800;
         
-        const scale = Math.max(imgSize / mainImg.width, imgSize / mainImg.height);
-        const drawW = mainImg.width * scale;
-        const drawH = mainImg.height * scale;
-        ctx.drawImage(mainImg, imgX + (imgSize - drawW)/2, imgY + (imgSize - drawH)/2, drawW, drawH);
-        
-        const cardY = imgY + imgSize + 20;
-        const cardH = 220;
-        ctx.fillStyle = '#ffffff';
-        
-        // 安全绘制圆角矩形，防止旧版 iOS 崩溃
-        if (ctx.roundRect) {
-          ctx.beginPath();
-          ctx.roundRect(40, cardY, 720, cardH, 20);
-          ctx.fill();
-        } else {
-          ctx.fillRect(40, cardY, 720, cardH); 
-        }
-        
-        let textStartX = 70;
-
+        // 2. 如果有收纳箱图片，绘制在下方（也是全宽 800x800）
         if (locImg) {
-          const locImgSize = 100;
-          const locImgX = 60;
-          const locImgY = cardY + 60;
-          
-          ctx.save();
-          ctx.beginPath();
-          // 简单矩形裁剪防崩溃
-          ctx.rect(locImgX, locImgY, locImgSize, locImgSize);
-          ctx.clip();
-          
-          const locScale = Math.max(locImgSize / locImg.width, locImgSize / locImg.height);
+          textY += 800;
+          const locScale = Math.max(canvasW / locImg.width, 800 / locImg.height);
           const locDrawW = locImg.width * locScale;
           const locDrawH = locImg.height * locScale;
-          ctx.drawImage(locImg, locImgX + (locImgSize - locDrawW)/2, locImgY + (locImgSize - locDrawH)/2, locDrawW, locDrawH);
-          ctx.restore();
-          
-          ctx.strokeStyle = '#e8e2d6';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.rect(locImgX, locImgY, locImgSize, locImgSize);
-          ctx.stroke();
-          
-          textStartX = 180; 
+          ctx.drawImage(locImg, (canvasW - locDrawW)/2, 800 + (800 - locDrawH)/2, locDrawW, locDrawH);
         }
         
+        // 3. 绘制最底部文字卡片区
+        const cardH = 250;
+        const cardY = textY;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, cardY, canvasW, cardH);
+        
+        // 绘制文字
         ctx.fillStyle = '#333333';
-        ctx.font = 'bold 40px sans-serif';
-        ctx.fillText(item.name, textStartX, cardY + 70);
+        ctx.font = 'bold 45px sans-serif';
+        ctx.fillText(item.name, 40, cardY + 70);
         
         ctx.fillStyle = '#e6703b';
-        ctx.font = '28px sans-serif';
+        ctx.font = '30px sans-serif';
         let tagText = item.type === 'wardrobe' ? `尺码: ${item.size || '无'}` : `数量: ${item.quantity}${item.unit}`;
         if (item.category) tagText += ` | 分类: ${item.category}`;
-        ctx.fillText(tagText, textStartX, cardY + 125);
+        ctx.fillText(tagText, 40, cardY + 135);
         
         ctx.fillStyle = '#666666';
-        ctx.font = '26px sans-serif';
+        ctx.font = '28px sans-serif';
         const locName = this.getLocationName(item.location_id) || item.location || '未指定位置';
-        ctx.fillText(`📍 存放于: ${locName}`, textStartX, cardY + 180);
+        ctx.fillText(`📍 存放于: ${locName}`, 40, cardY + 195);
         
+        // 水印
         ctx.fillStyle = '#cccccc';
         ctx.font = '20px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('- 来自家庭收纳仓库 -', canvasW/2, canvasH - 20);
+        ctx.textAlign = 'right';
+        ctx.fillText('- 家庭收纳仓库 -', canvasW - 40, cardY + 230);
         
         this.posterUrl = canvas.toDataURL('image/jpeg', 0.9);
         
