@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>家庭收纳与日用品仓库</title>
   
+  <!-- 💡 PWA 配置 -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="收纳库">
+  <meta name="theme-color" content="#e6703b">
+
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
@@ -290,7 +297,6 @@
             <option value="春秋">🍃 春秋季</option>
             <option value="四季">📅 四季/不限</option>
           </select>
-          <!-- 💡 新增：状态筛选 -->
           <select v-model="filterFitStatus" class="season-select" style="margin-top:0; flex:1;">
             <option value="all">📌 所有状态</option>
             <option value="合身">✅ 合身</option>
@@ -441,7 +447,6 @@
         </div>
         <div style="display: flex; gap: 8px;">
           <button class="btn small" style="background: #e6703b; flex: 1;" @click="batchRemoveFromStorage">移出本箱</button>
-          <!-- 💡 新增批量转移 -->
           <button class="btn small" style="background: #4A90E2; flex: 1;" @click="openBatchMoveModal">📦 移入其他箱</button>
         </div>
       </div>
@@ -767,7 +772,6 @@
         </div>
       </div>
 
-      <!-- 💡 新增：合身状态 -->
       <div class="input-wrap">
         <label>当前状态</label>
         <select v-model="modal.form.fit_status" style="border-color: #fce8e8;">
@@ -1000,7 +1004,6 @@ createApp({
         form: { id: null, name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
       },
       
-      // 批量转移
       batchMoveModal: { show: false, targetLocId: null },
 
       swipeOffsets: {},  
@@ -1422,7 +1425,6 @@ createApp({
       document.body.removeChild(textArea);
     },
 
-    // 💡 新增：打开批量转移弹窗
     openBatchMoveModal() {
       if (this.selectedStorageItems.length === 0) {
         alert("请先勾选要转移的物品");
@@ -1435,7 +1437,6 @@ createApp({
       this.batchMoveModal = { show: true, targetLocId: null };
     },
 
-    // 💡 新增：执行批量转移
     async doBatchMove() {
       const targetId = this.batchMoveModal.targetLocId;
       if (!targetId) {
@@ -1824,6 +1825,15 @@ createApp({
     }
   }
 }).mount('#app');
+
+// 💡 注册 PWA Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => console.log('PWA 注册成功'))
+      .catch(err => console.log('PWA 注册失败', err));
+  });
+}
 </script>
 </body>
 </html>
