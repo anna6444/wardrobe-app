@@ -25,7 +25,12 @@
 
     /* 通用组件 */
     .card { background: #fff; border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    /* 💡 首页专用更紧凑的卡片 */
+    .home-card { padding: 16px; margin-bottom: 12px; }
+    
     h2 { font-size: 18px; margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; justify-content: space-between;}
+    .home-card h2 { font-size: 16px; margin-bottom: 10px; }
+    
     .btn { background: #e6703b; color: #fff; border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s; }
     .btn:active { opacity: 0.8; transform: scale(0.98); }
     .btn.secondary { background: #f1ede4; color: #555; }
@@ -62,7 +67,7 @@
     /* 列表与卡片：列表模式 */
     .list-1 { display: flex; flex-direction: column; gap: 10px; }
     
-    /* 💡 新增：左滑删除包装器 */
+    /* 左滑删除包装器 */
     .swipe-wrapper { position: relative; overflow: hidden; border-radius: 16px; background: #d14a4a; touch-action: pan-y; }
     .swipe-content { transition: transform 0.3s ease; background: #fff; position: relative; z-index: 2; will-change: transform; }
     .swipe-content.no-transition { transition: none; }
@@ -97,18 +102,18 @@
 
     .empty-text { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
     
-    /* 首页专用样式 */
-    .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
-    .quick-btn { background: #faf8f5; border-radius: 12px; padding: 12px 4px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #eee; }
+    /* 💡 首页专用样式（缩小版） */
+    .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+    .quick-btn { background: #faf8f5; border-radius: 12px; padding: 10px 4px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #eee; }
     .quick-btn:active { background: #f0e9df; }
-    .quick-icon { font-size: 24px; margin-bottom: 6px; }
+    .quick-icon { font-size: 22px; margin-bottom: 4px; }
     .quick-text { font-size: 12px; color: #555; font-weight: 500; }
     
-    .recent-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; margin-top: 10px; }
-    .recent-item { min-width: 100px; text-align: center; cursor: pointer; }
-    .recent-img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #f0f0f0; margin-bottom: 6px; border: 1px solid #eee;}
-    .recent-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 80px; margin: 0 auto; }
-    .recent-type { font-size: 10px; color: #999; }
+    .recent-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; margin-top: 8px; }
+    .recent-item { min-width: 60px; width: 60px; text-align: center; cursor: pointer; }
+    .recent-img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; background: #f0f0f0; margin-bottom: 4px; border: 1px solid #eee;}
+    .recent-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 60px; margin: 0 auto; }
+    .recent-type { font-size: 9px; color: #999; }
 
     /* 加载遮罩 */
     .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
@@ -127,14 +132,14 @@
 
   <div class="container">
     
-    <!-- ================= 首页 ================= -->
+    <!-- ================= 💡 紧凑版首页 ================= -->
     <div v-if="view === 'home'">
-      <div class="card" style="background: linear-gradient(135deg, #fff, #fdfaf6); padding: 24px;">
-        <h2 style="font-size: 22px; margin-bottom: 6px;">👋 欢迎回家</h2>
-        <p style="color: #888; font-size: 14px;">{{ seasonTip }}</p>
+      <div class="card home-card" style="background: linear-gradient(135deg, #fff, #fdfaf6);">
+        <h2 style="font-size: 20px; margin-bottom: 4px;">👋 欢迎回家</h2>
+        <p style="color: #888; font-size: 13px; line-height: 1.4;">{{ seasonTip }}</p>
       </div>
 
-      <div class="card">
+      <div class="card home-card">
         <h2>⚡ 快捷操作</h2>
         <div class="quick-actions">
           <div class="quick-btn" @click="view='wardrobe'; openAddWardrobe()">
@@ -156,28 +161,29 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card home-card">
         <h2>🚨 需要留意</h2>
-        <div v-if="urgentSupplies.length > 0" style="margin-top: 10px;">
-          <div v-for="item in urgentSupplies" :key="item.id" style="background: #fff8f8; padding: 12px; border-radius: 12px; border: 1px solid #fce8e8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <div v-if="urgentSupplies.length > 0" style="margin-top: 8px;">
+          <div v-for="item in urgentSupplies.slice(0, 2)" :key="item.id" style="background: #fff8f8; padding: 10px; border-radius: 12px; border: 1px solid #fce8e8; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-weight: 600; font-size: 15px;">
+              <div style="font-weight: 600; font-size: 14px;">
                 {{ item.name }} 
-                <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩 {{ getDaysLeft(item.expire_date) }} 天</span>
+                <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
                 <span class="tag orange" v-if="item.quantity <= item.low_stock">库存告急</span>
               </div>
-              <div style="font-size: 12px; color: #666; margin-top: 4px;">📍 {{ getLocationName(item.location_id) || '未指定位置' }}</div>
+              <div style="font-size: 11px; color: #666; margin-top: 4px;">📍 {{ getLocationName(item.location_id) || '未指定位置' }}</div>
             </div>
-            <button class="btn small" style="background: #e6703b;" @click="view='supplies'">去看看</button>
+            <button class="btn small" style="background: #e6703b; padding: 6px 10px;" @click="view='supplies'">查看</button>
           </div>
+          <div v-if="urgentSupplies.length > 2" style="font-size: 12px; color: #999; text-align: center; margin-top: 4px;">还有 {{ urgentSupplies.length - 2 }} 项...</div>
         </div>
-        <div v-else style="text-align: center; padding: 20px 0;">
-          <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
-          <p style="font-size: 14px; color: #2b703b; font-weight: 600;">库存健康，暂无过期风险</p>
+        <div v-else style="text-align: center; padding: 12px 0;">
+          <div style="font-size: 24px; margin-bottom: 4px;">✅</div>
+          <p style="font-size: 13px; color: #2b703b; font-weight: 600;">库存健康，暂无风险</p>
         </div>
       </div>
 
-      <div class="card" v-if="recentItems.length > 0">
+      <div class="card home-card" v-if="recentItems.length > 0">
         <h2>🕒 最近入库</h2>
         <div class="recent-scroll">
           <div class="recent-item" v-for="item in recentItems" :key="item.unique_id" @click="handleRecentClick(item)">
@@ -188,20 +194,20 @@
         </div>
       </div>
 
-      <div class="card">
-        <h2>📊 仓库概览</h2>
-        <div style="display: flex; justify-content: space-between; margin-top: 12px;">
+      <div class="card home-card">
+        <h2>📊 仓库概况</h2>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px;">
           <div style="text-align: center; flex: 1; border-right: 1px solid #eee;">
-            <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ wardrobeData.length }}</div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">衣物</div>
+            <div style="font-size: 20px; font-weight: bold; color: #e6703b;">{{ wardrobeData.length }}</div>
+            <div style="font-size: 12px; color: #666;">衣物</div>
           </div>
           <div style="text-align: center; flex: 1; border-right: 1px solid #eee;">
-            <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ suppliesData.length }}</div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">日用品</div>
+            <div style="font-size: 20px; font-weight: bold; color: #e6703b;">{{ suppliesData.length }}</div>
+            <div style="font-size: 12px; color: #666;">日用品</div>
           </div>
           <div style="text-align: center; flex: 1;">
-            <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ locationsData.length }}</div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">收纳箱</div>
+            <div style="font-size: 20px; font-weight: bold; color: #e6703b;">{{ locationsData.length }}</div>
+            <div style="font-size: 12px; color: #666;">收纳箱</div>
           </div>
         </div>
       </div>
@@ -379,7 +385,6 @@
 
       <div v-if="displayMode === 'list'" class="list-1">
         <div class="swipe-wrapper" v-for="item in getStorageItems()" :key="item.unique_id">
-          <!-- 批量模式下不显示删除，非批量显示 -->
           <div v-if="!storageDetailBatchMode" class="swipe-delete-btn" @click.stop="quickDeleteItem(item, item.type)">删除</div>
           
           <div class="swipe-content" :class="{'no-transition': swipingId === item.unique_id}"
@@ -482,7 +487,6 @@
                   📍 {{ getLocationName(item.location_id) || item.location || '未指定位置' }}
                 </div>
               </div>
-              <!-- 这里的加减号加上 .stop 阻止滑动和点击冲突 -->
               <div style="display: flex; align-items: center; gap: 8px;" @click.stop>
                 <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click="adjustSupply(item, -1)">-</button>
                 <div style="text-align: center; width: 40px; font-weight: bold;">{{ item.quantity }}</div>
@@ -836,12 +840,11 @@ createApp({
         form: { id: null, name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
       },
 
-      // 💡 左滑相关变量
-      swipeOffsets: {},  // 存储每个元素的滑动偏移量
+      swipeOffsets: {},  
       touchStartX: 0,
       touchStartY: 0,
-      swipingId: null,   // 当前正在滑动的元素 ID
-      openSwipeId: null  // 当前保持打开删除按钮的 ID
+      swipingId: null,   
+      openSwipeId: null  
     };
   },
   
@@ -1009,12 +1012,10 @@ createApp({
       }
     },
 
-    // 💡 左滑逻辑相关方法
+    // 左滑逻辑相关方法
     onTouchStart(e, id) {
-      // 如果处于批量模式，不响应滑动
       if (this.storageDetailBatchMode && this.view === 'storage_detail') return;
       
-      // 如果当前有打开的滑窗，且不是当前滑窗，先关闭旧的
       if (this.openSwipeId && this.openSwipeId !== id) {
         this.swipeOffsets[this.openSwipeId] = 0;
         this.openSwipeId = null;
@@ -1031,15 +1032,12 @@ createApp({
       let deltaX = e.touches[0].clientX - this.touchStartX;
       let deltaY = e.touches[0].clientY - this.touchStartY;
 
-      // 如果横向滑动距离大于纵向，则视为滑动操作，阻止默认滚动
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
-        if (e.cancelable) e.preventDefault(); // 阻止页面上下滚动
+        if (e.cancelable) e.preventDefault(); 
 
-        // 如果当前已经打开，基准位置是 -80，否则是 0
         let baseOffset = (this.openSwipeId === id) ? -80 : 0;
         let newOffset = baseOffset + deltaX;
 
-        // 限制范围在 [-80, 0] 之间
         if (newOffset > 0) newOffset = 0;
         if (newOffset < -80) newOffset = -80;
 
@@ -1052,7 +1050,6 @@ createApp({
       this.swipingId = null;
 
       const offset = this.swipeOffsets[id] || 0;
-      // 如果滑过一半，自动弹开；否则回弹
       if (offset < -40) {
         this.swipeOffsets[id] = -80;
         this.openSwipeId = id;
@@ -1061,20 +1058,16 @@ createApp({
         if (this.openSwipeId === id) this.openSwipeId = null;
       }
     },
-    // 点击内容区处理
     handleSwipeClick(item, type, uniqueId) {
-      // 如果当前有打开的，先关闭
       if (this.openSwipeId === uniqueId) {
         this.swipeOffsets[uniqueId] = 0;
         this.openSwipeId = null;
         return;
       }
       
-      // 正常打开编辑
       if (type === 'wardrobe') this.openEditWardrobe(item);
       else this.openEditSupply(item);
     },
-    // 收纳库详情页的点击处理
     handleStorageSwipeClick(item) {
       if (this.storageDetailBatchMode) {
         this.toggleStorageItemSelection(item);
@@ -1085,12 +1078,9 @@ createApp({
         this.openSwipeId = null;
         return;
       }
-      // 非批量模式，点击打开编辑
       item.type === 'wardrobe' ? this.openEditWardrobe(item) : this.openEditSupply(item);
     },
-    // 全局点击，关闭所有滑窗
     closeAllSwipes(e) {
-      // 如果点击的是删除按钮，不要关闭（让删除按钮的点击事件处理）
       if (e && e.target && e.target.classList.contains('swipe-delete-btn')) return;
       
       if (this.openSwipeId) {
@@ -1099,7 +1089,6 @@ createApp({
       }
     },
 
-    // 💡 单条快速删除逻辑
     async quickDeleteItem(item, type) {
       const confirmMsg = type === 'wardrobe' ? "确定删除这件衣物吗？" : "确定删除这个物品吗？";
       if (!confirm(confirmMsg)) {
@@ -1157,7 +1146,6 @@ createApp({
     toggleStorageBatchMode() {
       this.storageDetailBatchMode = !this.storageDetailBatchMode;
       if (!this.storageDetailBatchMode) this.selectedStorageItems = [];
-      // 切换模式时关闭所有滑窗
       this.closeAllSwipes();
     },
     isItemSelected(item) {
