@@ -148,6 +148,7 @@
       </div>
 
       <div class="grid-2">
+        <!-- 点击卡片直接触发 openEditWardrobe -->
         <div class="item-card" v-for="item in filteredWardrobe" :key="item.id" @click="openEditWardrobe(item)">
           <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img" />
           <div class="item-info">
@@ -178,6 +179,7 @@
       </div>
 
       <div class="grid-2">
+        <!-- 点击收纳箱触发 openLocationItems -->
         <div class="item-card" v-for="loc in locationsData" :key="loc.id" @click="openLocationItems(loc)">
           <div style="position: relative;">
             <img :src="loc.image_url || 'https://via.placeholder.com/200?text=Box'" class="item-img" />
@@ -333,8 +335,16 @@
   <!-- ================= 弹窗：查看容器里的物品 ================= -->
   <div class="modal-mask" v-if="locItemsModal.show" @click.self="locItemsModal.show=false">
     <div class="modal-box">
-      <h3 style="margin-bottom: 4px;">📦 {{ locItemsModal.loc.code }} - {{ locItemsModal.loc.name }}</h3>
-      <p style="font-size: 12px; color: #999; margin-bottom: 16px;">共装有 {{ locItemsModal.items.length }} 件物品</p>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <h3 style="margin-bottom: 4px;">📦 {{ locItemsModal.loc.code }} - {{ locItemsModal.loc.name }}</h3>
+          <p style="font-size: 12px; color: #999;">共装有 {{ locItemsModal.items.length }} 件物品</p>
+        </div>
+        <!-- 💡 新增：编辑收纳盒信息的按钮 -->
+        <button class="btn small" style="background: #4A90E2; white-space: nowrap;" @click="openEditLocation(locItemsModal.loc)">
+          ✏️ 编辑信息
+        </button>
+      </div>
       
       <div v-if="locItemsModal.items.length === 0" class="empty-text" style="padding: 20px;">这个箱子里空空如也~</div>
       
@@ -436,7 +446,9 @@
 
       <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button v-if="modal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; flex: 1;" @click="deleteWardrobe">删除</button>
-        <button class="btn" style="flex: 2;" @click="saveWardrobe" :disabled="isUploading">保存</button>
+        <button class="btn" style="flex: 2;" @click="saveWardrobe" :disabled="isUploading">
+          {{ isUploading ? '保存中...' : '保存修改' }}
+        </button>
       </div>
     </div>
   </div>
@@ -489,7 +501,6 @@
       </div>
       
       <div style="display: flex; gap: 10px;">
-        <!-- 💡 日用品也可以选择收纳库了 -->
         <div class="input-wrap" style="flex: 1; background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
           <label style="color: #d14a4a; font-weight: 600;">📍 存放在哪？</label>
           <select v-model="supplyModal.form.location_id" style="border-color: #fce8e8;">
@@ -675,8 +686,8 @@ createApp({
 
       this.isUploading = true;
       try {
-        // 兼容 iOS Safari，关闭 WebWorker
-        const options = { maxSizeMB: 0.2, maxWidthOrHeight: 800, useWebWorker: false };
+        // 💡 极致压缩：50KB以内，最大宽高600px
+        const options = { maxSizeMB: 0.05, maxWidthOrHeight: 600, useWebWorker: false };
         const compressedFile = await imageCompression(file, options);
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
         
@@ -699,6 +710,11 @@ createApp({
     // --- 收纳容器逻辑 ---
     openAddLocation() {
       this.locModal = { show: true, isEdit: false, form: { id: null, code: '', name: '', description: '', image_url: '' } };
+    },
+    openEditLocation(loc) {
+      // 关闭查看物品弹窗，打开编辑收纳盒弹窗
+      this.locItemsModal.show = false;
+      this.locModal = { show: true, isEdit: true, form: { ...loc } };
     },
     openLocationItems(loc) {
       // 合并衣物和日用品
