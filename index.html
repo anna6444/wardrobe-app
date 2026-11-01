@@ -168,14 +168,14 @@
     </div>
   </div>
 
-  <!-- 分享海报预览 (带一键保存、分享按钮) -->
+  <!-- 💡 分享海报预览 (带一键保存、分享按钮) -->
   <div class="poster-modal" v-if="posterUrl" @click="posterUrl = ''">
     <img :src="posterUrl" class="poster-img" @click.stop />
     <div class="poster-btn-group" @click.stop>
       <button class="btn secondary" @click="savePoster">📥 保存图片</button>
       <button class="btn" style="background: #07C160;" @click="sharePosterToWX">💬 分享给朋友</button>
     </div>
-    <div class="poster-tips-small">提示：如果点击没反应，请长按图片保存</div>
+    <div class="poster-tips-small">💡 如果保存后相册没有，请长按上方图片保存</div>
   </div>
 
   <div class="loading-mask" v-if="isUploading">
@@ -888,7 +888,7 @@ createApp({
       previewImage: '',
       previewItemData: null,
       posterUrl: '',
-      posterFile: null, // 保存文件对象用于分享
+      posterFile: null, 
       
       showConfigModal: false,
       showKey: false,
@@ -1106,12 +1106,6 @@ createApp({
       }
     },
 
-    closeAllModals() {
-      this.previewImage = '';
-      this.posterUrl = '';
-      this.previewItemData = null;
-    },
-
     showPreview(item, type) {
       if (!item.image_url) return;
       this.previewImage = item.image_url;
@@ -1147,36 +1141,45 @@ createApp({
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // 💡 画布大瘦身：宽度 800，高度 1100
         const canvasW = 800;
-        const canvasH = 1100; 
+        const imgH = 400; // 每张图固定 400 高
+        const canvasH = 1000; // 总高 1000 (400 + 400 + 200)
         canvas.width = canvasW;
         canvas.height = canvasH;
         
-        // 背景
         ctx.fillStyle = '#f9f6ef';
         ctx.fillRect(0, 0, canvasW, canvasH);
         
-        // 1. 上半部分画物品图 (均分，高度 450)
-        const imgH = 450;
-        const mainScale = Math.max(canvasW / mainImg.width, imgH / mainImg.height);
-        const mainDrawW = mainImg.width * mainScale;
-        const mainDrawH = mainImg.height * mainScale;
-        ctx.drawImage(mainImg, (canvasW - mainDrawW)/2, (imgH - mainDrawH)/2, mainDrawW, mainDrawH);
+        // 💡 画图辅助函数，保证图片居中裁剪铺满指定区域，绝不越界遮挡
+        const drawImageCover = (image, x, y, w, h) => {
+          const imgRatio = image.width / image.height;
+          const boxRatio = w / h;
+          let sx, sy, sWidth, sHeight;
+          if (imgRatio > boxRatio) {
+            sHeight = image.height;
+            sWidth = sHeight * boxRatio;
+            sx = (image.width - sWidth) / 2;
+            sy = 0;
+          } else {
+            sWidth = image.width;
+            sHeight = sWidth / boxRatio;
+            sx = 0;
+            sy = (image.height - sHeight) / 2;
+          }
+          ctx.drawImage(image, sx, sy, sWidth, sHeight, x, y, w, h);
+        };
+
+        // 1. 上半部分画物品图 (0, 0, 800, 400)
+        drawImageCover(mainImg, 0, 0, canvasW, imgH);
         
-        // 2. 下半部分画收纳箱图 (如果有，高度也是 450)
-        let textY = imgH;
+        // 2. 下半部分画收纳箱图 (0, 400, 800, 400)
         if (locImg) {
-          textY += imgH;
-          const locScale = Math.max(canvasW / locImg.width, imgH / locImg.height);
-          const locDrawW = locImg.width * locScale;
-          const locDrawH = locImg.height * locScale;
-          ctx.drawImage(locImg, (canvasW - locDrawW)/2, imgH + (imgH - locDrawH)/2, locDrawW, locDrawH);
+          drawImageCover(locImg, 0, imgH, canvasW, imgH);
         }
         
-        // 3. 底部画文字区 (高度 200)
+        // 3. 底部画文字区 (0, 800, 800, 200)
         const cardH = 200;
-        const cardY = textY;
+        const cardY = 800;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, cardY, canvasW, cardH);
         
@@ -1202,11 +1205,9 @@ createApp({
         ctx.textAlign = 'right';
         ctx.fillText('- 家庭收纳仓库 -', canvasW - 40, cardY + 190);
         
-        // 生成图片数据
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         this.posterUrl = dataUrl;
         
-        // 将 Base64 转为 Blob 供分享和保存使用
         const base64Data = dataUrl.split(',')[1];
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
@@ -1214,7 +1215,7 @@ createApp({
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        this.posterFile = new File([byteArray], `share_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        this.posterFile = new File([byteArray], `收纳_${Date.now()}.jpg`, { type: 'image/jpeg' });
         
       } catch (e) {
         console.error("Canvas Error:", e);
@@ -1226,21 +1227,23 @@ createApp({
 
     // 💡 一键保存图片
     savePoster() {
-      if (!this.posterUrl) return;
+      if (!this.posterFile) return;
+      const url = URL.createObjectURL(this.posterFile);
       const link = document.createElement('a');
-      link.href = this.posterUrl;
+      link.href = url;
       link.download = `收纳_${this.previewItemData.name}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
-      // iOS Safari 会弹出新窗口显示图片，提示用户长按
+      // iOS 提示去文件里找
       if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
-        alert("已为您打开图片，请长按图片保存到相册。");
+        alert("已开始下载。如果相册未找到，请去手机【文件】App中查看，或直接长按上方图片保存。");
       }
     },
 
-    // 💡 一键分享到微信
+    // 💡 一键分享
     async sharePosterToWX() {
       if (!this.posterFile) return;
       
