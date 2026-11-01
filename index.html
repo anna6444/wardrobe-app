@@ -10,7 +10,6 @@
   <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
   <style>
-    /* 💡 修复了左右滑动晃动的问题：加了 overflow-x: hidden 和 width: 100% */
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
     html, body { width: 100%; overflow-x: hidden; }
     body { background-color: #f9f6ef; color: #333; padding-bottom: 100px; font-size: 15px; user-select: none; padding-top: env(safe-area-inset-top); }
@@ -77,7 +76,7 @@
     .modal-box { background: #fff; border-radius: 20px; padding: 24px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; overflow-x: hidden; animation: slideUp 0.3s ease-out; }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     
-    .input-wrap { margin-bottom: 14px; min-width: 0; /* 💡 防止输入框撑破容器 */ }
+    .input-wrap { margin-bottom: 14px; min-width: 0; }
     label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
     input, select, textarea { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s; min-width: 0; }
     input:focus, select:focus, textarea:focus { border-color: #e6703b; background: #fff; }
@@ -267,7 +266,7 @@
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddWardrobe">+</button>
     </div>
 
-    <!-- ================= 收纳库 ================= -->
+    <!-- ================= 收纳库首页 ================= -->
     <div v-if="view === 'storage'">
       <div class="card" style="background: #eaf6ec; border: 1px solid #cce5d2; margin-bottom: 16px; padding: 14px;">
         <p style="font-size: 13px; color: #2b703b; line-height: 1.5;">
@@ -275,9 +274,16 @@
         </p>
       </div>
 
+      <div class="filter-container">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input v-model="searchStorage" placeholder="搜索编号、名称或备注..." />
+        </div>
+      </div>
+
       <!-- 网格模式 -->
       <div v-if="displayMode === 'grid'" class="grid-2">
-        <div class="item-card-grid" v-for="loc in locationsData" :key="loc.id" @click="openLocationItems(loc)">
+        <div class="item-card-grid" v-for="loc in filteredLocations" :key="loc.id" @click="openStorageDetail(loc)">
           <div style="position: relative;">
             <img :src="loc.image_url || 'https://via.placeholder.com/200?text=Box'" class="item-img-grid" />
             <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; padding: 6px 10px; font-size: 13px; font-weight: bold;">
@@ -293,7 +299,7 @@
 
       <!-- 列表模式 -->
       <div v-if="displayMode === 'list'" class="list-1">
-        <div class="item-card-list" v-for="loc in locationsData" :key="loc.id" @click="openLocationItems(loc)">
+        <div class="item-card-list" v-for="loc in filteredLocations" :key="loc.id" @click="openStorageDetail(loc)">
           <div class="item-info-list">
             <div class="item-name" style="color: #e6703b; font-size: 16px;">{{ loc.code }} - {{ loc.name }}</div>
             <div class="item-meta" style="margin-top: 6px;">📦 共 {{ getItemsCountInLoc(loc.id) }} 件物品</div>
@@ -303,9 +309,77 @@
         </div>
       </div>
 
-      <div v-if="locationsData.length === 0" class="empty-text">还没有收纳袋/箱，点击右下角新建</div>
+      <div v-if="filteredLocations.length === 0" class="empty-text">没有找到相关收纳箱</div>
 
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddLocation">+</button>
+    </div>
+
+    <!-- ================= 💡 收纳库详情页（新页面，代替弹窗） ================= -->
+    <div v-if="view === 'storage_detail' && currentLocation">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <button class="btn secondary" @click="closeStorageDetail">⬅️ 返回收纳库</button>
+        <button class="btn" :style="{background: storageDetailBatchMode ? '#d14a4a' : '#4A90E2'}" @click="toggleStorageBatchMode">
+          {{ storageDetailBatchMode ? '取消批量' : '批量管理' }}
+        </button>
+      </div>
+
+      <div class="card">
+        <h2>📦 {{ currentLocation.code }} - {{ currentLocation.name }}</h2>
+        <p style="font-size: 13px; color: #666; margin-top: 8px;">{{ currentLocation.description || '暂无备注' }}</p>
+        <p style="font-size: 13px; color: #e6703b; font-weight: 600; margin-top: 8px;">共装有 {{ getStorageItems().length }} 件物品</p>
+        <button class="btn small" style="margin-top: 10px; background: #f1ede4; color: #555;" @click="openEditLocation(currentLocation)">✏️ 编辑箱子信息</button>
+      </div>
+
+      <!-- 批量操作栏 -->
+      <div v-if="storageDetailBatchMode" style="background: #fff; padding: 14px; border-radius: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 10px; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <div style="font-size: 14px; font-weight: 600;">已选 {{ selectedStorageItems.length }} 件</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn small secondary" @click="selectAllStorageItems">全选/反选</button>
+          <button class="btn small" style="background: #e6703b;" @click="batchRemoveFromStorage">移出本箱</button>
+          <button class="btn small" style="background: #d14a4a;" @click="batchDeleteStorageItems">彻底删除</button>
+        </div>
+      </div>
+
+      <!-- 物品列表 -->
+      <div v-if="getStorageItems().length === 0" class="empty-text">这个箱子里空空如也~</div>
+      
+      <div v-if="displayMode === 'grid'" class="grid-2">
+        <div class="item-card-grid" v-for="item in getStorageItems()" :key="item.unique_id" @click="toggleStorageItemSelection(item)" :style="storageDetailBatchMode && isItemSelected(item) ? 'border: 2px solid #d14a4a; opacity: 0.8;' : ''">
+          <!-- 勾选框 -->
+          <div v-if="storageDetailBatchMode" style="position: absolute; top: 8px; left: 8px; z-index: 10; width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center;">
+            <div v-if="isItemSelected(item)" style="width: 14px; height: 14px; background: #d14a4a; border-radius: 50%;"></div>
+          </div>
+          
+          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" />
+          <div class="item-info-grid">
+            <div class="item-name">{{ item.name }}</div>
+            <div class="item-meta">
+              <span class="tag" :class="item.type === 'wardrobe' ? 'blue' : 'orange'">{{ item.type === 'wardrobe' ? '衣物' : '日用品' }}</span>
+              <span v-if="item.type === 'wardrobe'" class="tag green">{{ item.size }}</span>
+              <span v-else class="tag red">x {{ item.quantity }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="displayMode === 'list'" class="list-1">
+        <div class="item-card-list" v-for="item in getStorageItems()" :key="item.unique_id" @click="toggleStorageItemSelection(item)" :style="storageDetailBatchMode && isItemSelected(item) ? 'border: 2px solid #d14a4a; opacity: 0.8;' : ''">
+          <div class="item-info-list" style="display: flex; align-items: center; gap: 10px;">
+             <div v-if="storageDetailBatchMode" style="width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                <div v-if="isItemSelected(item)" style="width: 10px; height: 10px; background: #d14a4a; border-radius: 50%;"></div>
+             </div>
+             <div style="flex: 1;">
+                <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
+                <div class="item-meta">
+                  <span class="tag" :class="item.type === 'wardrobe' ? 'blue' : 'orange'">{{ item.type === 'wardrobe' ? '衣物' : '日用品' }}</span>
+                  <span v-if="item.type === 'wardrobe'" class="tag green">{{ item.size }}</span>
+                  <span v-else class="tag red">x {{ item.quantity }}</span>
+                </div>
+             </div>
+          </div>
+          <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" />
+        </div>
+      </div>
     </div>
 
     <!-- ================= 日用品 ================= -->
@@ -430,7 +504,7 @@
   <div class="tab-bar">
     <div class="tab-item" :class="{active: view==='home'}" @click="view='home'"><span class="tab-icon">🏠</span><span class="tab-label">首页</span></div>
     <div class="tab-item" :class="{active: view==='wardrobe'}" @click="view='wardrobe'"><span class="tab-icon">👕</span><span class="tab-label">衣物库</span></div>
-    <div class="tab-item" :class="{active: view==='storage'}" @click="view='storage'"><span class="tab-icon">📦</span><span class="tab-label">收纳库</span></div>
+    <div class="tab-item" :class="{active: view==='storage' || view==='storage_detail'}" @click="view='storage'; closeStorageDetail();"><span class="tab-icon">📦</span><span class="tab-label">收纳库</span></div>
     <div class="tab-item" :class="{active: view==='supplies' || view==='todo'}" @click="view='supplies'"><span class="tab-icon">🧻</span><span class="tab-label">日用品</span></div>
     <div class="tab-item" :class="{active: view==='setting'}" @click="view='setting'"><span class="tab-icon">⚙️</span><span class="tab-label">设置</span></div>
   </div>
@@ -453,7 +527,7 @@
         </template>
       </div>
 
-      <div class="input-wrap">
+      <div class=" <input-wrap">
         <label>编号 <span style="color:red">*</span></label>
         <input v-model="locModal.form.code" placeholder="如：A-01, 3号箱" />
       </div>
@@ -472,40 +546,6 @@
           {{ isUploading ? '保存中...' : '保存入库' }}
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- ================= 弹窗：查看容器里的物品 ================= -->
-  <div class="modal-mask" v-if="locItemsModal.show" @click.self="locItemsModal.show=false">
-    <div class="modal-box">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-        <div>
-          <h3 style="margin-bottom: 4px;">📦 {{ locItemsModal.loc.code }} - {{ locItemsModal.loc.name }}</h3>
-          <p style="font-size: 12px; color: #999;">共装有 {{ locItemsModal.items.length }} 件物品</p>
-        </div>
-        <button class="btn small" style="background: #4A90E2; white-space: nowrap;" @click="openEditLocation(locItemsModal.loc)">
-          ✏️ 编辑信息
-        </button>
-      </div>
-      
-      <div v-if="locItemsModal.items.length === 0" class="empty-text" style="padding: 20px;">这个箱子里空空如也~</div>
-      
-      <div v-for="item in locItemsModal.items" :key="item.unique_id" class="list-row" style="padding: 10px 0;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <img :src="item.image_url || 'https://via.placeholder.com/50'" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;" />
-          <div>
-            <div style="font-weight: 600; font-size: 14px;">
-              <span style="font-size: 16px; margin-right: 4px;">{{ item.type === 'wardrobe' ? '👕' : '🧻' }}</span>
-              {{ item.name }}
-            </div>
-            <div style="font-size: 12px; color: #666;" v-if="item.type === 'wardrobe'">尺码: {{ item.size }}</div>
-            <div style="font-size: 12px; color: #666;" v-else>数量: {{ item.quantity }} {{ item.unit }}</div>
-          </div>
-        </div>
-        <button class="btn small secondary" @click="locItemsModal.show=false; item.type === 'wardrobe' ? openEditWardrobe(item) : openEditSupply(item)">查看</button>
-      </div>
-      
-      <button class="btn secondary" style="width: 100%; margin-top: 16px;" @click="locItemsModal.show=false">关闭</button>
     </div>
   </div>
 
@@ -540,7 +580,7 @@
         <div class="input-wrap" style="flex: 1;">
           <label>适用季节</label>
           <select v-model="modal.form.season">
-            <option value="春季">春季</option>
+           option value="春季">春季</option>
             <option value="夏季">夏季</option>
             <option value="秋季">秋季</option>
             <option value="冬季">冬季</option>
@@ -734,17 +774,20 @@ createApp({
       
       searchWardrobe: '',
       searchSupply: '',
+      searchStorage: '', // 收纳库搜索
       filterOwner: 'all',
       filterSeason: 'all',
       filterSupply: 'all',
       filterSupplySeason: 'all',
       
+      // 收纳库详情页状态
+      currentLocation: null,
+      storageDetailBatchMode: false,
+      selectedStorageItems: [],
+      
       locModal: {
         show: false, isEdit: false,
         form: { id: null, code: '', name: '', description: '', image_url: '' }
-      },
-      locItemsModal: {
-        show: false, loc: {}, items: []
       },
       modal: {
         show: false, isEdit: false,
@@ -779,6 +822,15 @@ createApp({
       });
       
       return all.slice(0, 5); 
+    },
+
+    filteredLocations() {
+      const kw = this.searchStorage.trim().toLowerCase();
+      if (!kw) return this.locationsData;
+      return this.locationsData.filter(loc => {
+        const str = `${loc.code} ${loc.name} ${loc.description}`.toLowerCase();
+        return str.includes(kw);
+      });
     },
 
     filteredWardrobe() {
@@ -917,15 +969,107 @@ createApp({
       this.locModal = { show: true, isEdit: false, form: { id: null, code: '', name: '', description: '', image_url: '' } };
     },
     openEditLocation(loc) {
-      this.locItemsModal.show = false;
       this.locModal = { show: true, isEdit: true, form: { ...loc } };
     },
-    openLocationItems(loc) {
-      const wardrobeItems = this.wardrobeData.filter(item => item.location_id === loc.id).map(i => ({...i, type: 'wardrobe', unique_id: 'w_'+i.id}));
-      const supplyItems = this.suppliesData.filter(item => item.location_id === loc.id).map(i => ({...i, type: 'supply', unique_id: 's_'+i.id}));
-      
-      this.locItemsModal = { show: true, loc: loc, items: [...wardrobeItems, ...supplyItems] };
+    
+    // 新页面跳转逻辑
+    openStorageDetail(loc) {
+      this.currentLocation = loc;
+      this.view = 'storage_detail';
+      this.storageDetailBatchMode = false;
+      this.selectedStorageItems = [];
     },
+    closeStorageDetail() {
+      this.view = 'storage';
+      this.currentLocation = null;
+      this.storageDetailBatchMode = false;
+      this.selectedStorageItems = [];
+    },
+
+    // 获取当前库里的所有物品
+    getStorageItems() {
+      if (!this.currentLocation) return [];
+      const locId = this.currentLocation.id;
+      const wItems = this.wardrobeData.filter(item => item.location_id === locId).map(i => ({...i, type: 'wardrobe', unique_id: 'w_'+i.id}));
+      const sItems = this.suppliesData.filter(item => item.location_id === locId).map(i => ({...i, type: 'supply', unique_id: 's_'+i.id}));
+      return [...wItems, ...sItems];
+    },
+
+    // 批量选择逻辑
+    toggleStorageBatchMode() {
+      this.storageDetailBatchMode = !this.storageDetailBatchMode;
+      if (!this.storageDetailBatchMode) this.selectedStorageItems = [];
+    },
+    isItemSelected(item) {
+      return this.selectedStorageItems.some(i => i.unique_id === item.unique_id);
+    },
+    toggleStorageItemSelection(item) {
+      if (!this.storageDetailBatchMode) {
+        // 非批量模式，点击直接编辑
+        item.type === 'wardrobe' ? this.openEditWardrobe(item) : this.openEditSupply(item);
+        return;
+      }
+      const idx = this.selectedStorageItems.findIndex(i => i.unique_id === item.unique_id);
+      if (idx > -1) this.selectedStorageItems.splice(idx, 1);
+      else this.selectedStorageItems.push(item);
+    },
+    selectAllStorageItems() {
+      const items = this.getStorageItems();
+      if (this.selectedStorageItems.length === items.length) {
+        this.selectedStorageItems = [];
+      } else {
+        this.selectedStorageItems = [...items];
+      }
+    },
+    
+    // 批量移出本箱
+    async batchRemoveFromStorage() {
+      if (this.selectedStorageItems.length === 0) return;
+      if (!confirm(`确定将这 ${this.selectedStorageItems.length} 件物品移出本收纳箱吗？（物品仍保留在系统里）`)) return;
+      
+      this.isUploading = true;
+      try {
+        const wIds = this.selectedStorageItems.filter(i => i.type === 'wardrobe').map(i => i.id);
+        const sIds = this.selectedStorageItems.filter(i => i.type === 'supply').map(i => i.id);
+        
+        if (wIds.length > 0) await this.supabase.from('wardrobe').update({ location_id: null }).in('id', wIds);
+        if (sIds.length > 0) await this.supabase.from('supplies').update({ location_id: null }).in('id', sIds);
+        
+        this.selectedStorageItems = [];
+        this.storageDetailBatchMode = false;
+        await this.fetchData();
+        alert("✅ 已成功移出本箱！");
+      } catch (err) {
+        alert("操作失败：" + err.message);
+      } finally {
+        this.isUploading = false;
+      }
+    },
+    
+    // 批量彻底删除
+    async batchDeleteStorageItems() {
+      if (this.selectedStorageItems.length === 0) return;
+      if (!confirm(`⚠️ 警告：确定要彻底删除这 ${this.selectedStorageItems.length} 件物品吗？删除后无法恢复！`)) return;
+      
+      this.isUploading = true;
+      try {
+        const wIds = this.selectedStorageItems.filter(i => i.type === 'wardrobe').map(i => i.id);
+        const sIds = this.selectedStorageItems.filter(i => i.type === 'supply').map(i => i.id);
+        
+        if (wIds.length > 0) await this.supabase.from('wardrobe').delete().in('id', wIds);
+        if (sIds.length > 0) await this.supabase.from('supplies').delete().in('id', sIds);
+        
+        this.selectedStorageItems = [];
+        this.storageDetailBatchMode = false;
+        await this.fetchData();
+        alert("✅ 已彻底删除！");
+      } catch (err) {
+        alert("删除失败：" + err.message);
+      } finally {
+        this.isUploading = false;
+      }
+    },
+
     async saveLocation() {
       const f = this.locModal.form;
       if (!f.code || !f.name) { alert("请填写编号和名称"); return; }
@@ -951,6 +1095,7 @@ createApp({
       try {
         await this.supabase.from('storage_locations').delete().eq('id', this.locModal.form.id);
         this.locModal.show = false;
+        if (this.view === 'storage_detail') this.closeStorageDetail();
         await this.fetchData();
       } catch (err) {
         alert("删除失败：" + err.message);
