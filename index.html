@@ -88,19 +88,6 @@
 
     .empty-text { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
     
-    /* 首页专用样式 */
-    .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
-    .quick-btn { background: #faf8f5; border-radius: 12px; padding: 12px 4px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #eee; }
-    .quick-btn:active { background: #f0e9df; }
-    .quick-icon { font-size: 24px; margin-bottom: 6px; }
-    .quick-text { font-size: 12px; color: #555; font-weight: 500; }
-    
-    .recent-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; margin-top: 10px; }
-    .recent-item { min-width: 100px; text-align: center; cursor: pointer; }
-    .recent-img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #f0f0f0; margin-bottom: 6px; border: 1px solid #eee;}
-    .recent-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 80px; margin: 0 auto; }
-    .recent-type { font-size: 10px; color: #999; }
-
     /* 加载遮罩 */
     .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
     .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e6703b; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;}
@@ -118,85 +105,39 @@
 
   <div class="container">
     
-    <!-- ================= 💡 全新升级的首页 ================= -->
+    <!-- ================= 首页 ================= -->
     <div v-if="view === 'home'">
-      <div class="card" style="background: linear-gradient(135deg, #fff, #fdfaf6); padding: 24px;">
-        <h2 style="font-size: 22px; margin-bottom: 6px;">👋 欢迎回家</h2>
-        <p style="color: #888; font-size: 14px;">{{ seasonTip }}</p>
+      <div class="card" style="background: linear-gradient(135deg, #fff, #fdfaf6);">
+        <h2>👋 欢迎回家</h2>
+        <p style="color: #666; font-size: 14px; margin-top: 8px;">今天有什么需要整理的？</p>
       </div>
 
-      <!-- 快捷操作 -->
+      <div class="card" v-if="urgentSupplies.length > 0">
+        <h2 style="color: #d14a4a;">🚨 日用品紧急提醒</h2>
+        <div v-for="item in urgentSupplies" :key="item.id" style="background: #fff8f8; padding: 12px; border-radius: 12px; border: 1px solid #fce8e8; margin: 8px 0;">
+          <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">
+            {{ item.name }} 
+            <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩 {{ getDaysLeft(item.expire_date) }} 天</span>
+          </div>
+          <div style="font-size: 13px; color: #666;">当前库存：{{ item.quantity }}{{ item.unit }}</div>
+        </div>
+        <button class="btn small" style="width: 100%; margin-top: 10px;" @click="view='todo'">去查看采购清单</button>
+      </div>
+
       <div class="card">
-        <h2>⚡ 快捷操作</h2>
-        <div class="quick-actions">
-          <div class="quick-btn" @click="view='wardrobe'; openAddWardrobe()">
-            <div class="quick-icon">👕</div>
-            <div class="quick-text">加衣服</div>
-          </div>
-          <div class="quick-btn" @click="view='supplies'; openAddSupply()">
-            <div class="quick-icon">🧻</div>
-            <div class="quick-text">加用品</div>
-          </div>
-          <div class="quick-btn" @click="view='storage'; openAddLocation()">
-            <div class="quick-icon">📦</div>
-            <div class="quick-text">建箱子</div>
-          </div>
-          <div class="quick-btn" @click="view='todo'">
-            <div class="quick-icon">🛒</div>
-            <div class="quick-text">看清单</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 预警面板 -->
-      <div class="card">
-        <h2>🚨 需要留意</h2>
-        <div v-if="urgentSupplies.length > 0" style="margin-top: 10px;">
-          <div v-for="item in urgentSupplies" :key="item.id" style="background: #fff8f8; padding: 12px; border-radius: 12px; border: 1px solid #fce8e8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div style="font-weight: 600; font-size: 15px;">
-                {{ item.name }} 
-                <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩 {{ getDaysLeft(item.expire_date) }} 天</span>
-                <span class="tag orange" v-if="item.quantity <= item.low_stock">库存告急</span>
-              </div>
-              <div style="font-size: 12px; color: #666; margin-top: 4px;">📍 {{ getLocationName(item.location_id) || '未指定位置' }}</div>
-            </div>
-            <button class="btn small" style="background: #e6703b;" @click="view='supplies'">去看看</button>
-          </div>
-        </div>
-        <div v-else style="text-align: center; padding: 20px 0;">
-          <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
-          <p style="font-size: 14px; color: #2b703b; font-weight: 600;">库存健康，暂无过期风险</p>
-        </div>
-      </div>
-
-      <!-- 最近入库 -->
-      <div class="card" v-if="recentItems.length > 0">
-        <h2>🕒 最近入库</h2>
-        <div class="recent-scroll">
-          <div class="recent-item" v-for="item in recentItems" :key="item.unique_id" @click="handleRecentClick(item)">
-            <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Img'" class="recent-img" />
-            <div class="recent-name">{{ item.name }}</div>
-            <div class="recent-type">{{ item.type === 'wardrobe' ? '衣物' : '日用品' }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 数据概览 -->
-      <div class="card">
-        <h2>📊 仓库概览</h2>
+        <h2>📦 仓库概览</h2>
         <div style="display: flex; justify-content: space-between; margin-top: 12px;">
           <div style="text-align: center; flex: 1; border-right: 1px solid #eee;">
             <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ wardrobeData.length }}</div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">衣物</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">衣物总数</div>
           </div>
           <div style="text-align: center; flex: 1; border-right: 1px solid #eee;">
             <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ suppliesData.length }}</div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">日用品</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">日用品总数</div>
           </div>
           <div style="text-align: center; flex: 1;">
             <div style="font-size: 24px; font-weight: bold; color: #e6703b;">{{ locationsData.length }}</div>
-            <div style="font-size: 12px; color: #666; margin-top: 4px;">收纳箱</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">收纳容器</div>
           </div>
         </div>
       </div>
@@ -205,6 +146,7 @@
     <!-- ================= 衣物库 ================= -->
     <div v-if="view === 'wardrobe'">
       <div class="filter-container">
+        <!-- 💡 新增：搜索框 -->
         <div class="search-box">
           <span class="search-icon">🔍</span>
           <input v-model="searchWardrobe" placeholder="搜索颜色、名称、品类或位置..." />
@@ -320,6 +262,7 @@
       </div>
 
       <div class="filter-container">
+        <!-- 💡 新增：搜索框 -->
         <div class="search-box">
           <span class="search-icon">🔍</span>
           <input v-model="searchSupply" placeholder="搜索名称、分类或位置..." />
@@ -733,6 +676,7 @@ createApp({
       suppliesData: [],
       locationsData: [],
       
+      // 搜索与筛选状态
       searchWardrobe: '',
       searchSupply: '',
       filterOwner: 'all',
@@ -759,42 +703,20 @@ createApp({
   },
   
   computed: {
-    // 💡 首页：季节小助手
-    seasonTip() {
-      const month = new Date().getMonth() + 1; // 1-12
-      if (month >= 3 && month <= 5) return "🌸 春暖花开，可以开始准备把厚重的冬装收进床底啦，顺便看看春夏的衣服有没有需要补货的。";
-      if (month >= 6 && month <= 8) return "☀️ 夏日炎炎，短袖短裤都找出来了吗？空调被准备好哦。";
-      if (month >= 9 && month <= 11) return "🍁 秋意渐浓，早晚温差大，记得把长袖和薄外套整理出来，冬被也可以拿出来晒晒了。";
-      return "❄️ 寒冬腊月，羽绒服、厚被子和保暖用品都在哪个箱子？赶紧查一下，别冻着啦。";
-    },
-
-    // 💡 首页：最近入库的5件物品（合并衣服和日用品）
-    recentItems() {
-      const wardrobes = this.wardrobeData.map(i => ({...i, type: 'wardrobe', unique_id: 'w_'+i.id}));
-      const supplies = this.suppliesData.map(i => ({...i, type: 'supply', unique_id: 's_'+i.id}));
-      
-      const all = [...wardrobes, ...supplies];
-      
-      // 按创建时间倒序排序（如果没有创建时间就放后面）
-      all.sort((a, b) => {
-        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return timeB - timeA;
-      });
-      
-      return all.slice(0, 5); // 只要前5个
-    },
-
     filteredWardrobe() {
       const kw = this.searchWardrobe.trim().toLowerCase();
       
       return this.wardrobeData.filter(item => {
+        // 1. 基础筛选
         const matchOwner = this.filterOwner === 'all' || item.owner === this.filterOwner;
         const matchSeason = this.filterSeason === 'all' || item.season === this.filterSeason;
         if (!matchOwner || !matchSeason) return false;
         
+        // 2. 模糊搜索
         if (!kw) return true;
+        
         const locName = this.getLocationName(item.location_id) || '';
+        // 把所有能搜的文字拼起来，转小写
         const searchStr = `${item.name} ${item.category} ${item.size} ${item.season} ${locName}`.toLowerCase();
         return searchStr.includes(kw);
       });
@@ -804,11 +726,14 @@ createApp({
       const kw = this.searchSupply.trim().toLowerCase();
       
       return this.suppliesData.filter(item => {
+        // 1. 基础筛选
         const matchCategory = this.filterSupply === 'all' || item.category === this.filterSupply;
         const matchSeason = this.filterSupplySeason === 'all' || item.season === this.filterSupplySeason;
         if (!matchCategory || !matchSeason) return false;
         
+        // 2. 模糊搜索
         if (!kw) return true;
+        
         const locName = this.getLocationName(item.location_id) || item.location || '';
         const searchStr = `${item.name} ${item.category} ${item.season} ${locName}`.toLowerCase();
         return searchStr.includes(kw);
@@ -839,17 +764,6 @@ createApp({
     setDisplayMode(mode) {
       this.displayMode = mode;
       localStorage.setItem('displayMode', mode);
-    },
-
-    // 💡 首页：点击最近物品跳转
-    handleRecentClick(item) {
-      if (item.type === 'wardrobe') {
-        this.view = 'wardrobe';
-        setTimeout(() => this.openEditWardrobe(item), 100);
-      } else {
-        this.view = 'supplies';
-        setTimeout(() => this.openEditSupply(item), 100);
-      }
     },
 
     initSupabase() {
