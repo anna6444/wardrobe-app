@@ -61,7 +61,14 @@
 
     /* 列表与卡片：列表模式 */
     .list-1 { display: flex; flex-direction: column; gap: 10px; }
-    .item-card-list { background: #fff; border-radius: 16px; border: 1px solid #eee; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; overflow: hidden; }
+    
+    /* 💡 新增：左滑删除包装器 */
+    .swipe-wrapper { position: relative; overflow: hidden; border-radius: 16px; background: #d14a4a; touch-action: pan-y; }
+    .swipe-content { transition: transform 0.3s ease; background: #fff; position: relative; z-index: 2; will-change: transform; }
+    .swipe-content.no-transition { transition: none; }
+    .swipe-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #d14a4a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; z-index: 1; cursor: pointer; }
+    
+    .item-card-list { border-radius: 16px; border: 1px solid #eee; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; overflow: hidden; }
     .item-info-list { flex: 1; min-width: 0; padding-right: 16px;}
     .item-img-list { width: 70px; height: 70px; border-radius: 12px; object-fit: cover; background: #f9f9f9; flex-shrink: 0; }
 
@@ -110,7 +117,7 @@
   </style>
 </head>
 <body>
-<div id="app">
+<div id="app" @click="closeAllSwipes">
   
   <div class="loading-mask" v-if="isUploading">
     <div class="spinner"></div>
@@ -243,21 +250,31 @@
         </div>
       </div>
 
-      <!-- 列表模式 -->
+      <!-- 列表模式（左滑删除） -->
       <div v-if="displayMode === 'list'" class="list-1">
-        <div class="item-card-list" v-for="item in filteredWardrobe" :key="item.id" @click="openEditWardrobe(item)">
-          <div class="item-info-list">
-            <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
-            <div class="item-meta">
-              <span class="tag blue">{{ item.size }}</span> 
-              <span v-if="item.season" class="tag green">{{ item.season }}</span>
-              <span class="tag">{{ item.category }}</span>
-            </div>
-            <div class="item-meta" style="color: #e6703b; font-weight: 600; margin-top: 6px;">
-              📍 {{ getLocationName(item.location_id) }}
+        <div class="swipe-wrapper" v-for="item in filteredWardrobe" :key="item.id">
+          <div class="swipe-delete-btn" @click.stop="quickDeleteItem(item, 'wardrobe')">删除</div>
+          <div class="swipe-content" :class="{'no-transition': swipingId === item.id}"
+               :style="{ transform: `translateX(${swipeOffsets['w_'+item.id] || 0}px)` }"
+               @touchstart="onTouchStart($event, 'w_'+item.id)"
+               @touchmove="onTouchMove($event, 'w_'+item.id)"
+               @touchend="onTouchEnd('w_'+item.id)"
+               @click="handleSwipeClick(item, 'wardrobe', 'w_'+item.id)">
+            <div class="item-card-list" style="border: none; border-radius: 16px;">
+              <div class="item-info-list">
+                <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
+                <div class="item-meta">
+                  <span class="tag blue">{{ item.size }}</span> 
+                  <span v-if="item.season" class="tag green">{{ item.season }}</span>
+                  <span class="tag">{{ item.category }}</span>
+                </div>
+                <div class="item-meta" style="color: #e6703b; font-weight: 600; margin-top: 6px;">
+                  📍 {{ getLocationName(item.location_id) }}
+                </div>
+              </div>
+              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" />
             </div>
           </div>
-          <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" />
         </div>
       </div>
 
@@ -314,7 +331,7 @@
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddLocation">+</button>
     </div>
 
-    <!-- ================= 💡 收纳库详情页（新页面，代替弹窗） ================= -->
+    <!-- ================= 收纳库详情页 ================= -->
     <div v-if="view === 'storage_detail' && currentLocation">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <button class="btn secondary" @click="closeStorageDetail">⬅️ 返回收纳库</button>
@@ -345,11 +362,9 @@
       
       <div v-if="displayMode === 'grid'" class="grid-2">
         <div class="item-card-grid" v-for="item in getStorageItems()" :key="item.unique_id" @click="toggleStorageItemSelection(item)" :style="storageDetailBatchMode && isItemSelected(item) ? 'border: 2px solid #d14a4a; opacity: 0.8;' : ''">
-          <!-- 勾选框 -->
           <div v-if="storageDetailBatchMode" style="position: absolute; top: 8px; left: 8px; z-index: 10; width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center;">
             <div v-if="isItemSelected(item)" style="width: 14px; height: 14px; background: #d14a4a; border-radius: 50%;"></div>
           </div>
-          
           <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" />
           <div class="item-info-grid">
             <div class="item-name">{{ item.name }}</div>
@@ -363,21 +378,33 @@
       </div>
 
       <div v-if="displayMode === 'list'" class="list-1">
-        <div class="item-card-list" v-for="item in getStorageItems()" :key="item.unique_id" @click="toggleStorageItemSelection(item)" :style="storageDetailBatchMode && isItemSelected(item) ? 'border: 2px solid #d14a4a; opacity: 0.8;' : ''">
-          <div class="item-info-list" style="display: flex; align-items: center; gap: 10px;">
-             <div v-if="storageDetailBatchMode" style="width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-                <div v-if="isItemSelected(item)" style="width: 10px; height: 10px; background: #d14a4a; border-radius: 50%;"></div>
-             </div>
-             <div style="flex: 1;">
-                <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
-                <div class="item-meta">
-                  <span class="tag" :class="item.type === 'wardrobe' ? 'blue' : 'orange'">{{ item.type === 'wardrobe' ? '衣物' : '日用品' }}</span>
-                  <span v-if="item.type === 'wardrobe'" class="tag green">{{ item.size }}</span>
-                  <span v-else class="tag red">x {{ item.quantity }}</span>
-                </div>
-             </div>
+        <div class="swipe-wrapper" v-for="item in getStorageItems()" :key="item.unique_id">
+          <!-- 批量模式下不显示删除，非批量显示 -->
+          <div v-if="!storageDetailBatchMode" class="swipe-delete-btn" @click.stop="quickDeleteItem(item, item.type)">删除</div>
+          
+          <div class="swipe-content" :class="{'no-transition': swipingId === item.unique_id}"
+               :style="{ transform: `translateX(${swipeOffsets[item.unique_id] || 0}px)` }"
+               @touchstart="onTouchStart($event, item.unique_id)"
+               @touchmove="onTouchMove($event, item.unique_id)"
+               @touchend="onTouchEnd(item.unique_id)"
+               @click="handleStorageSwipeClick(item)">
+            <div class="item-card-list" style="border: none; border-radius: 16px;" :style="storageDetailBatchMode && isItemSelected(item) ? 'border: 2px solid #d14a4a; opacity: 0.8;' : ''">
+              <div class="item-info-list" style="display: flex; align-items: center; gap: 10px;">
+                 <div v-if="storageDetailBatchMode" style="width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 2px solid #ccc; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                    <div v-if="isItemSelected(item)" style="width: 10px; height: 10px; background: #d14a4a; border-radius: 50%;"></div>
+                 </div>
+                 <div style="flex: 1;">
+                    <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
+                    <div class="item-meta">
+                      <span class="tag" :class="item.type === 'wardrobe' ? 'blue' : 'orange'">{{ item.type === 'wardrobe' ? '衣物' : '日用品' }}</span>
+                      <span v-if="item.type === 'wardrobe'" class="tag green">{{ item.size }}</span>
+                      <span v-else class="tag red">x {{ item.quantity }}</span>
+                    </div>
+                 </div>
+              </div>
+              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" />
+            </div>
           </div>
-          <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" />
         </div>
       </div>
     </div>
@@ -434,23 +461,34 @@
         </div>
       </div>
 
-      <!-- 列表模式 -->
+      <!-- 列表模式（左滑删除） -->
       <div v-if="displayMode === 'list'" class="list-1">
-        <div class="item-card-list" v-for="item in filteredSupplies" :key="item.id">
-          <div class="item-info-list">
-            <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
-            <div class="item-meta">
-              <span class="tag orange">{{ item.category }}</span>
-              <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
+        <div class="swipe-wrapper" v-for="item in filteredSupplies" :key="item.id">
+          <div class="swipe-delete-btn" @click.stop="quickDeleteItem(item, 'supply')">删除</div>
+          <div class="swipe-content" :class="{'no-transition': swipingId === 's_'+item.id}"
+               :style="{ transform: `translateX(${swipeOffsets['s_'+item.id] || 0}px)` }"
+               @touchstart="onTouchStart($event, 's_'+item.id)"
+               @touchmove="onTouchMove($event, 's_'+item.id)"
+               @touchend="onTouchEnd('s_'+item.id)"
+               @click="handleSwipeClick(item, 'supply', 's_'+item.id)">
+            <div class="item-card-list" style="border: none; border-radius: 16px;">
+              <div class="item-info-list">
+                <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
+                <div class="item-meta">
+                  <span class="tag orange">{{ item.category }}</span>
+                  <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
+                </div>
+                <div class="item-meta" style="font-size: 12px; color: #999; margin-top: 4px;">
+                  📍 {{ getLocationName(item.location_id) || item.location || '未指定位置' }}
+                </div>
+              </div>
+              <!-- 这里的加减号加上 .stop 阻止滑动和点击冲突 -->
+              <div style="display: flex; align-items: center; gap: 8px;" @click.stop>
+                <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click="adjustSupply(item, -1)">-</button>
+                <div style="text-align: center; width: 40px; font-weight: bold;">{{ item.quantity }}</div>
+                <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click="adjustSupply(item, 1)">+</button>
+              </div>
             </div>
-            <div class="item-meta" style="font-size: 12px; color: #999; margin-top: 4px;">
-              📍 {{ getLocationName(item.location_id) || item.location || '未指定位置' }}
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click.stop="adjustSupply(item, -1)">-</button>
-            <div style="text-align: center; width: 40px; font-weight: bold;">{{ item.quantity }}</div>
-            <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click.stop="adjustSupply(item, 1)">+</button>
           </div>
         </div>
       </div>
@@ -484,6 +522,7 @@
           <div :class="{active: displayMode === 'grid'}" @click="setDisplayMode('grid')">🔳 大图模式</div>
           <div :class="{active: displayMode === 'list'}" @click="setDisplayMode('list')">☰ 小图列表</div>
         </div>
+        <p style="font-size: 12px; color: #999; margin-top: 8px;">💡 小图列表模式下，向左滑动单条数据可快速删除。</p>
       </div>
 
       <div class="card">
@@ -527,7 +566,7 @@
         </template>
       </div>
 
-      <div class=" <input-wrap">
+      <div class="input-wrap">
         <label>编号 <span style="color:red">*</span></label>
         <input v-model="locModal.form.code" placeholder="如：A-01, 3号箱" />
       </div>
@@ -580,7 +619,7 @@
         <div class="input-wrap" style="flex: 1;">
           <label>适用季节</label>
           <select v-model="modal.form.season">
-           option value="春季">春季</option>
+            <option value="春季">春季</option>
             <option value="夏季">夏季</option>
             <option value="秋季">秋季</option>
             <option value="冬季">冬季</option>
@@ -774,13 +813,12 @@ createApp({
       
       searchWardrobe: '',
       searchSupply: '',
-      searchStorage: '', // 收纳库搜索
+      searchStorage: '',
       filterOwner: 'all',
       filterSeason: 'all',
       filterSupply: 'all',
       filterSupplySeason: 'all',
       
-      // 收纳库详情页状态
       currentLocation: null,
       storageDetailBatchMode: false,
       selectedStorageItems: [],
@@ -796,7 +834,14 @@ createApp({
       supplyModal: {
         show: false, isEdit: false,
         form: { id: null, name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
-      }
+      },
+
+      // 💡 左滑相关变量
+      swipeOffsets: {},  // 存储每个元素的滑动偏移量
+      touchStartX: 0,
+      touchStartY: 0,
+      swipingId: null,   // 当前正在滑动的元素 ID
+      openSwipeId: null  // 当前保持打开删除按钮的 ID
     };
   },
   
@@ -964,6 +1009,122 @@ createApp({
       }
     },
 
+    // 💡 左滑逻辑相关方法
+    onTouchStart(e, id) {
+      // 如果处于批量模式，不响应滑动
+      if (this.storageDetailBatchMode && this.view === 'storage_detail') return;
+      
+      // 如果当前有打开的滑窗，且不是当前滑窗，先关闭旧的
+      if (this.openSwipeId && this.openSwipeId !== id) {
+        this.swipeOffsets[this.openSwipeId] = 0;
+        this.openSwipeId = null;
+      }
+
+      this.touchStartX = e.touches[0].clientX;
+      this.touchStartY = e.touches[0].clientY;
+      this.swipingId = id;
+    },
+    onTouchMove(e, id) {
+      if (this.storageDetailBatchMode && this.view === 'storage_detail') return;
+      if (this.swipingId !== id) return;
+
+      let deltaX = e.touches[0].clientX - this.touchStartX;
+      let deltaY = e.touches[0].clientY - this.touchStartY;
+
+      // 如果横向滑动距离大于纵向，则视为滑动操作，阻止默认滚动
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+        if (e.cancelable) e.preventDefault(); // 阻止页面上下滚动
+
+        // 如果当前已经打开，基准位置是 -80，否则是 0
+        let baseOffset = (this.openSwipeId === id) ? -80 : 0;
+        let newOffset = baseOffset + deltaX;
+
+        // 限制范围在 [-80, 0] 之间
+        if (newOffset > 0) newOffset = 0;
+        if (newOffset < -80) newOffset = -80;
+
+        this.swipeOffsets[id] = newOffset;
+      }
+    },
+    onTouchEnd(id) {
+      if (this.storageDetailBatchMode && this.view === 'storage_detail') return;
+      if (this.swipingId !== id) return;
+      this.swipingId = null;
+
+      const offset = this.swipeOffsets[id] || 0;
+      // 如果滑过一半，自动弹开；否则回弹
+      if (offset < -40) {
+        this.swipeOffsets[id] = -80;
+        this.openSwipeId = id;
+      } else {
+        this.swipeOffsets[id] = 0;
+        if (this.openSwipeId === id) this.openSwipeId = null;
+      }
+    },
+    // 点击内容区处理
+    handleSwipeClick(item, type, uniqueId) {
+      // 如果当前有打开的，先关闭
+      if (this.openSwipeId === uniqueId) {
+        this.swipeOffsets[uniqueId] = 0;
+        this.openSwipeId = null;
+        return;
+      }
+      
+      // 正常打开编辑
+      if (type === 'wardrobe') this.openEditWardrobe(item);
+      else this.openEditSupply(item);
+    },
+    // 收纳库详情页的点击处理
+    handleStorageSwipeClick(item) {
+      if (this.storageDetailBatchMode) {
+        this.toggleStorageItemSelection(item);
+        return;
+      }
+      if (this.openSwipeId === item.unique_id) {
+        this.swipeOffsets[item.unique_id] = 0;
+        this.openSwipeId = null;
+        return;
+      }
+      // 非批量模式，点击打开编辑
+      item.type === 'wardrobe' ? this.openEditWardrobe(item) : this.openEditSupply(item);
+    },
+    // 全局点击，关闭所有滑窗
+    closeAllSwipes(e) {
+      // 如果点击的是删除按钮，不要关闭（让删除按钮的点击事件处理）
+      if (e && e.target && e.target.classList.contains('swipe-delete-btn')) return;
+      
+      if (this.openSwipeId) {
+        this.swipeOffsets[this.openSwipeId] = 0;
+        this.openSwipeId = null;
+      }
+    },
+
+    // 💡 单条快速删除逻辑
+    async quickDeleteItem(item, type) {
+      const confirmMsg = type === 'wardrobe' ? "确定删除这件衣物吗？" : "确定删除这个物品吗？";
+      if (!confirm(confirmMsg)) {
+        this.swipeOffsets['w_'+item.id] = 0;
+        this.swipeOffsets['s_'+item.id] = 0;
+        this.openSwipeId = null;
+        return;
+      }
+
+      this.isUploading = true;
+      try {
+        if (type === 'wardrobe') {
+          await this.supabase.from('wardrobe').delete().eq('id', item.id);
+        } else {
+          await this.supabase.from('supplies').delete().eq('id', item.id);
+        }
+        this.openSwipeId = null;
+        await this.fetchData();
+      } catch(err) {
+        alert("删除失败：" + err.message);
+      } finally {
+        this.isUploading = false;
+      }
+    },
+
     // --- 收纳容器逻辑 ---
     openAddLocation() {
       this.locModal = { show: true, isEdit: false, form: { id: null, code: '', name: '', description: '', image_url: '' } };
@@ -972,7 +1133,6 @@ createApp({
       this.locModal = { show: true, isEdit: true, form: { ...loc } };
     },
     
-    // 新页面跳转逻辑
     openStorageDetail(loc) {
       this.currentLocation = loc;
       this.view = 'storage_detail';
@@ -986,7 +1146,6 @@ createApp({
       this.selectedStorageItems = [];
     },
 
-    // 获取当前库里的所有物品
     getStorageItems() {
       if (!this.currentLocation) return [];
       const locId = this.currentLocation.id;
@@ -995,20 +1154,17 @@ createApp({
       return [...wItems, ...sItems];
     },
 
-    // 批量选择逻辑
     toggleStorageBatchMode() {
       this.storageDetailBatchMode = !this.storageDetailBatchMode;
       if (!this.storageDetailBatchMode) this.selectedStorageItems = [];
+      // 切换模式时关闭所有滑窗
+      this.closeAllSwipes();
     },
     isItemSelected(item) {
       return this.selectedStorageItems.some(i => i.unique_id === item.unique_id);
     },
     toggleStorageItemSelection(item) {
-      if (!this.storageDetailBatchMode) {
-        // 非批量模式，点击直接编辑
-        item.type === 'wardrobe' ? this.openEditWardrobe(item) : this.openEditSupply(item);
-        return;
-      }
+      if (!this.storageDetailBatchMode) return;
       const idx = this.selectedStorageItems.findIndex(i => i.unique_id === item.unique_id);
       if (idx > -1) this.selectedStorageItems.splice(idx, 1);
       else this.selectedStorageItems.push(item);
@@ -1022,7 +1178,6 @@ createApp({
       }
     },
     
-    // 批量移出本箱
     async batchRemoveFromStorage() {
       if (this.selectedStorageItems.length === 0) return;
       if (!confirm(`确定将这 ${this.selectedStorageItems.length} 件物品移出本收纳箱吗？（物品仍保留在系统里）`)) return;
@@ -1046,7 +1201,6 @@ createApp({
       }
     },
     
-    // 批量彻底删除
     async batchDeleteStorageItems() {
       if (this.selectedStorageItems.length === 0) return;
       if (!confirm(`⚠️ 警告：确定要彻底删除这 ${this.selectedStorageItems.length} 件物品吗？删除后无法恢复！`)) return;
