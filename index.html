@@ -114,12 +114,19 @@
     .recent-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 60px; margin: 0 auto; }
     .recent-type { font-size: 9px; color: #999; }
 
-    /* 图片全屏预览 */
-    .img-preview-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-    .img-preview-mask img { max-width: 95vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
+    /* 💡 图片全屏预览 & 海报生成 */
+    .img-preview-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .img-preview-box { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; padding: 20px; }
+    .img-preview-box img { max-width: 95vw; max-height: 80vh; border-radius: 8px; object-fit: contain; }
+    .poster-actions { width: 100%; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 20px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);}
+    
+    /* 生成的海报弹窗 */
+    .poster-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    .poster-img { max-width: 100%; max-height: 75vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .poster-tips { color: #fff; font-size: 14px; margin-top: 16px; font-weight: 600; text-align: center; }
 
     /* 加载遮罩 */
-    .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
+    .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
     .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e6703b; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;}
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -135,15 +142,28 @@
 <body>
 <div id="app" @click="closeAllSwipes">
   
-  <!-- 图片预览遮罩 -->
+  <!-- 图片全屏预览 -->
   <div class="img-preview-mask" v-if="previewImage" @click="previewImage = ''">
-    <img :src="previewImage" />
+    <div class="img-preview-box">
+      <img :src="previewImage" @click.stop />
+    </div>
+    <div class="poster-actions" @click.stop>
+      <button class="btn secondary" style="flex: 1; max-width: 150px;" @click="previewImage = ''">取消</button>
+      <button class="btn" style="flex: 1; max-width: 150px;" @click="generateSharePoster">📸 生成分享图</button>
+    </div>
+  </div>
+
+  <!-- 分享海报预览 -->
+  <div class="poster-modal" v-if="posterUrl" @click="posterUrl = ''">
+    <img :src="posterUrl" class="poster-img" />
+    <div class="poster-tips">👇 长按上方图片，选择“保存到手机”或“发送给朋友”</div>
+    <button class="btn secondary" style="margin-top: 20px; width: 100%; max-width: 200px;" @click="posterUrl = ''">关闭</button>
   </div>
 
   <div class="loading-mask" v-if="isUploading">
     <div class="spinner"></div>
     <div style="font-weight: 600; color: #e6703b;">处理中...</div>
-    <div style="font-size: 12px; color: #999; margin-top: 6px;">请勿关闭页面</div>
+    <div style="font-size: 12px; color: #999; margin-top: 6px;">请稍候</div>
   </div>
 
   <div class="container">
@@ -258,7 +278,7 @@
       <!-- 网格模式 -->
       <div v-if="displayMode === 'grid'" class="grid-2">
         <div class="item-card-grid" v-for="item in filteredWardrobe" :key="item.id" @click="openEditWardrobe(item)">
-          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" @click.stop="previewImage = item.image_url" />
+          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" @click.stop="showPreview(item, 'wardrobe')" />
           <div class="item-info-grid">
             <div class="item-name">{{ item.name }}</div>
             <div class="item-meta">
@@ -294,7 +314,7 @@
                   📍 {{ getLocationName(item.location_id) }}
                 </div>
               </div>
-              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" @click.stop="previewImage = item.image_url" />
+              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" @click.stop="showPreview(item, 'wardrobe')" />
             </div>
           </div>
         </div>
@@ -392,7 +412,7 @@
           <div v-if="storageDetailBatchMode || isCopyMode" style="position: absolute; top: 8px; left: 8px; z-index: 10; width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center;">
             <div v-if="isSelected(item)" style="width: 14px; height: 14px; background: #d14a4a; border-radius: 50%;"></div>
           </div>
-          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" @click.stop="previewImage = item.image_url" />
+          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" @click.stop="showPreview(item, item.type)" />
           <div class="item-info-grid">
             <div class="item-name">{{ item.name }}</div>
             <div class="item-meta">
@@ -428,7 +448,7 @@
                     </div>
                  </div>
               </div>
-              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" @click.stop="previewImage = item.image_url" />
+              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" @click.stop="showPreview(item, item.type)" />
             </div>
           </div>
         </div>
@@ -461,14 +481,16 @@
         </div>
 
         <div class="filter-bar">
-          <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filterSupply='all'">全部</div>
+          <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filter>
+Supply='all'">全部</div>
           <div class="filter-btn" :class="{active: filterSupply==='纸品'}" @click="filterSupply='纸品'">纸品</div>
           <div class="filter-btn" :class="{active: filterSupply==='清洁'}" @click="filterSupply='清洁'">清洁</div>
           <div class="filter-btn" :class="{active: filterSupply==='洗护'}" @click="filterSupply='洗护'">洗护</div>
           <div class="filter-btn" :class="{active: filterSupply==='药品'}" @click="filterSupply='药品'">药品</div>
           <div class="filter-btn" :class="{active: filterSupply==='被子/床品'}" @click="filterSupply='被子/床品'">被子/床品</div>
-          <div class="filter-btn" :class="{active: filterSupply==='五金'}" @click="filterSupply='五金'">五金</div>
-        </div>
+          <div class="filter-btn       " :class="{active: filter </Supply==='div五金'}" @click>
+="filterSupply='五金'     ">五金</div>
+        </ </div>
         <select v-model="filterSupplySeason" class="season-select">
           <option value="all">🌤️ 所有季节</option>
           <option value="冬季">❄️ 冬季</option>
@@ -480,7 +502,7 @@
       <!-- 网格模式 -->
       <div v-if="displayMode === 'grid'" class="grid-2">
         <div class="item-card-grid" v-for="item in filteredSupplies" :key="item.id" @click="openEditSupply(item)">
-          <img :src="item.image_url || 'https://via.placeholder.com/200?text=Item'" class="item-img-grid" @click.stop="previewImage = item.image_url" />
+          <img :src="item.image_url || 'https://via.placeholder.com/200?text=Item'" class="item-img-grid" @click.stop="showPreview(item, 'supply')" />
           <div class="item-info-grid">
             <div class="item-name">{{ item.name }}</div>
             <div class="item-meta">
@@ -497,9 +519,7 @@
                 <button class="btn small secondary" style="padding: 4px 8px; font-size: 12px;" @click="adjustSupply(item, 1)">+</button>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </divdiv>
 
       <!-- 列表模式 -->
       <div v-if="displayMode === 'list'" class="list-1">
@@ -570,7 +590,7 @@
           <div :class="{active: displayMode === 'grid'}" @click="setDisplayMode('grid')">🔳 大图模式</div>
           <div :class="{active: displayMode === 'list'}" @click="setDisplayMode('list')">☰ 小图列表</div>
         </div>
-        <p style="font-size: 12px; color: #999; margin-top: 8px;">💡 小图列表模式下，向左滑动单条数据可快速删除。点击所有图片均可放大查看。</p>
+        <p style="font-size: 12px; color: #999; margin-top: 8px;">💡 小图列表模式下，向左滑动单条数据可快速删除。点击所有图片均可放大并生成分享图。</p>
       </div>
 
       <div class="card">
@@ -846,7 +866,10 @@ createApp({
       view: 'home',
       isUploading: false,
       displayMode: localStorage.getItem('displayMode') || 'grid',
+      
       previewImage: '',
+      previewItemData: null,
+      posterUrl: '',
       
       showConfigModal: false,
       showKey: false,
@@ -873,7 +896,6 @@ createApp({
       storageDetailBatchMode: false,
       selectedStorageItems: [],
       
-      // 复制模式状态
       isCopyMode: false,
       
       locModal: {
@@ -966,7 +988,7 @@ createApp({
         name: item.name, 
         originalQuantity: Number(item.quantity),
         unit: item.unit,
-        buyQuantity: 1 // 默认购买1件
+        buyQuantity: 1 
       }));
     }
   },
@@ -1065,7 +1087,134 @@ createApp({
       }
     },
 
-    // --- 采购清单一键入库 ---
+    showPreview(item, type) {
+      if (!item.image_url) return;
+      this.previewImage = item.image_url;
+      this.previewItemData = { ...item, type: type };
+    },
+
+    async generateSharePoster() {
+      if (!this.previewItemData) return;
+      
+      this.isUploading = true;
+      const item = this.previewItemData;
+      const locInfo = this.locationsData.find(l => l.id === item.location_id);
+      
+      const loadImg = (src) => {
+        return new Promise((resolve, reject) => {
+          if(!src) return resolve(null);
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error("图片加载失败"));
+          img.src = src;
+        });
+      };
+
+      try {
+        // 同时加载物品大图和收纳箱小图
+        const [mainImg, locImg] = await Promise.all([
+          loadImg(item.image_url),
+          loadImg(locInfo ? locInfo.image_url : null)
+        ]);
+        
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const canvasW = 800;
+        const canvasH = 1040; // 稍微加高一点以便放下底部信息
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        
+        // 背景
+        ctx.fillStyle = '#f9f6ef';
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        
+        // 绘制物品大图区域
+        const imgSize = 720;
+        const imgX = 40;
+        const imgY = 40;
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(imgX, imgY, imgSize, imgSize);
+        
+        // 绘制主图（居中裁剪）
+        const scale = Math.max(imgSize / mainImg.width, imgSize / mainImg.height);
+        const drawW = mainImg.width * scale;
+        const drawH = mainImg.height * scale;
+        ctx.drawImage(mainImg, imgX + (imgSize - drawW)/2, imgY + (imgSize - drawH)/2, drawW, drawH);
+        
+        // 绘制底部白色卡片区
+        const cardY = imgY + imgSize + 20;
+        const cardH = 220;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(40, cardY, 720, cardH, 20);
+        ctx.fill();
+        
+        let textStartX = 70;
+
+        // 如果有收纳箱图片，画在左下角
+        if (locImg) {
+          const locImgSize = 100;
+          const locImgX = 60;
+          const locImgY = cardY + 60;
+          
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(locImgX, locImgY, locImgSize, locImgSize, 12);
+          ctx.clip();
+          
+          const locScale = Math.max(locImgSize / locImg.width, locImgSize / locImg.height);
+          const locDrawW = locImg.width * locScale;
+          const locDrawH = locImg.height * locScale;
+          ctx.drawImage(locImg, locImgX + (locImgSize - locDrawW)/2, locImgY + (locImgSize - locImgH)/2, locDrawW, locDrawH);
+          ctx.restore();
+          
+          // 给收纳箱图加个边框
+          ctx.strokeStyle = '#e8e2d6';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(locImgX, locImgY, locImgSize, locImgSize, 12);
+          ctx.stroke();
+          
+          textStartX = 180; // 文字向右偏移
+        }
+        
+        // 绘制文字信息
+        ctx.fillStyle = '#333333';
+        ctx.font = 'bold 40px sans-serif';
+        ctx.fillText(item.name, textStartX, cardY + 70);
+        
+        // 标签信息
+        ctx.fillStyle = '#e6703b';
+        ctx.font = '28px sans-serif';
+        let tagText = item.type === 'wardrobe' ? `尺码: ${item.size || '无'}` : `数量: ${item.quantity}${item.unit}`;
+        if (item.category) tagText += ` | 分类: ${item.category}`;
+        ctx.fillText(tagText, textStartX, cardY + 125);
+        
+        // 位置信息
+        ctx.fillStyle = '#666666';
+        ctx.font = '26px sans-serif';
+        const locName = this.getLocationName(item.location_id) || item.location || '未指定位置';
+        ctx.fillText(`📍 存放于: ${locName}`, textStartX, cardY + 180);
+        
+        // 底部水印
+        ctx.fillStyle = '#cccccc';
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('- 来自家庭收纳仓库 -', canvasW/2, canvasH - 20);
+        
+        this.posterUrl = canvas.toDataURL('image/jpeg', 0.9);
+        
+      } catch (e) {
+        console.error("Canvas Tainted:", e);
+        alert("生成分享图失败：可能是因为图片跨域限制。如果一直失败，请检查 Supabase 存储桶是否允许跨域。");
+      } finally {
+        this.isUploading = false;
+      }
+    },
+
     async stockInItem(item) {
       if (item.buyQuantity <= 0) return;
       
@@ -1085,23 +1234,20 @@ createApp({
       }
     },
 
-    // --- 收纳库复制模式相关 ---
     toggleCopyMode() {
       this.isCopyMode = !this.isCopyMode;
-      this.selectedStorageItems = []; // 切换模式时清空选择
+      this.selectedStorageItems = [];
       if (this.isCopyMode) {
-        this.storageDetailBatchMode = false; // 互斥
+        this.storageDetailBatchMode = false;
       }
     },
     
-    // 统一处理物品点击逻辑（判断是批量管理、复制模式还是普通编辑）
     handleItemClick(item) {
       if (this.storageDetailBatchMode || this.isCopyMode) {
         const idx = this.selectedStorageItems.findIndex(i => i.unique_id === item.unique_id);
         if (idx > -1) this.selectedStorageItems.splice(idx, 1);
         else this.selectedStorageItems.push(item);
       } else {
-        // 普通模式，点击编辑
         if (this.openSwipeId === item.unique_id) {
           this.swipeOffsets[item.unique_id] = 0;
           this.openSwipeId = null;
@@ -1124,7 +1270,6 @@ createApp({
       }
     },
 
-    // 确认复制选中的物品
     doCopySelected() {
       if (this.selectedStorageItems.length === 0) {
         alert("请先勾选要复制的物品");
@@ -1148,7 +1293,7 @@ createApp({
       try {
         document.execCommand('copy');
         alert("✅ 清单已复制！可以直接去微信粘贴发给家人了。");
-        this.isCopyMode = false; // 复制完自动退出
+        this.isCopyMode = false; 
         this.selectedStorageItems = [];
       } catch (err) {
         alert("复制失败，请重试");
@@ -1156,7 +1301,6 @@ createApp({
       document.body.removeChild(textArea);
     },
 
-    // --- 左滑删除逻辑 ---
     onTouchStart(e, id) {
       if (this.storageDetailBatchMode || this.isCopyMode) return;
       if (this.openSwipeId && this.openSwipeId !== id) {
@@ -1239,7 +1383,6 @@ createApp({
       }
     },
 
-    // --- 收纳容器逻辑 ---
     openAddLocation() {
       this.locModal = { show: true, isEdit: false, form: { id: null, code: '', name: '', description: '', image_url: '' } };
     },
@@ -1272,7 +1415,7 @@ createApp({
 
     toggleStorageBatchMode() {
       this.storageDetailBatchMode = !this.storageDetailBatchMode;
-      if (this.storageDetailBatchMode) this.isCopyMode = false; // 互斥
+      if (this.storageDetailBatchMode) this.isCopyMode = false; 
       if (!this.storageDetailBatchMode) this.selectedStorageItems = [];
       this.closeAllSwipes();
     },
@@ -1357,7 +1500,6 @@ createApp({
       }
     },
 
-    // --- 衣物逻辑 ---
     openAddWardrobe() {
       this.modal = {
         show: true, isEdit: false,
@@ -1405,7 +1547,6 @@ createApp({
       }
     },
 
-    // --- 日用品逻辑 ---
     openAddSupply() {
       this.supplyModal = {
         show: true, isEdit: false,
@@ -1471,7 +1612,6 @@ createApp({
       await this.supabase.from('supplies').update({ quantity: newQty }).eq('id', item.id);
     },
 
-    // --- 通用方法 ---
     getLocationName(locId) {
       const loc = this.locationsData.find(l => l.id === locId);
       return loc ? `${loc.code} - ${loc.name}` : '';
