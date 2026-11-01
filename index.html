@@ -25,7 +25,6 @@
 
     /* 通用组件 */
     .card { background: #fff; border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-    /* 💡 首页专用更紧凑的卡片 */
     .home-card { padding: 16px; margin-bottom: 12px; }
     
     h2 { font-size: 18px; margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; justify-content: space-between;}
@@ -59,9 +58,10 @@
     .view-toggle div.active { background: #fff; color: #e6703b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: bold;}
 
     /* 列表与卡片：网格模式 */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .item-card-grid { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #eee; position: relative; }
-    .item-img-grid { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f9f9f9; display: block; }
+    .grid-2 { display: grid; grid-template-columns;: 1fr 1fr; gap:  }
+14px; }
+       .item-card-grid { . background: #fff; border-radiussw: 16px;ipe overflow: hidden; border: 1px solid #eee; position: relative; }
+    .item-img-grid { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f9f9f9; display: block; cursor: pointer;}
     .item-info-grid { padding: 12px; }
 
     /* 列表与卡片：列表模式 */
@@ -70,12 +70,11 @@
     /* 左滑删除包装器 */
     .swipe-wrapper { position: relative; overflow: hidden; border-radius: 16px; background: #d14a4a; touch-action: pan-y; }
     .swipe-content { transition: transform 0.3s ease; background: #fff; position: relative; z-index: 2; will-change: transform; }
-    .swipe-content.no-transition { transition: none; }
-    .swipe-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #d14a4a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; z-index: 1; cursor: pointer; }
+    .swipe-content.no-transition { transition: none-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #d14a4a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; z-index: 1; cursor: pointer; }
     
-    .item-card-list { border-radius: 16px; border: 1px solid #eee; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; overflow: hidden; }
+    .item-card-list { border-radius: 16px; border: 1px solid #eee; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; overflow: hidden; background: #fff;}
     .item-info-list { flex: 1; min-width: 0; padding-right: 16px;}
-    .item-img-list { width: 70px; height: 70px; border-radius: 12px; object-fit: cover; background: #f9f9f9; flex-shrink: 0; }
+    .item-img-list { width: 70px; height: 70px; border-radius: 12px; object-fit: cover; background: #f9f9f9; flex-shrink: 0; cursor: pointer;}
 
     .item-name { font-weight: 600; font-size: 15px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .item-meta { font-size: 12px; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;}
@@ -102,7 +101,7 @@
 
     .empty-text { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
     
-    /* 💡 首页专用样式（缩小版） */
+    /* 首页专用样式 */
     .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
     .quick-btn { background: #faf8f5; border-radius: 12px; padding: 10px 4px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid #eee; }
     .quick-btn:active { background: #f0e9df; }
@@ -115,8 +114,12 @@
     .recent-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 60px; margin: 0 auto; }
     .recent-type { font-size: 9px; color: #999; }
 
+    /* 💡 图片全屏预览 */
+    .img-preview-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    .img-preview-mask img { max-width: 95vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
+
     /* 加载遮罩 */
-    .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
+    .loading-mask { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
     .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e6703b; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;}
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
@@ -124,6 +127,11 @@
 <body>
 <div id="app" @click="closeAllSwipes">
   
+  <!-- 图片预览遮罩 -->
+  <div class="img-preview-mask" v-if="previewImage" @click="previewImage = ''">
+    <img :src="previewImage" />
+  </div>
+
   <div class="loading-mask" v-if="isUploading">
     <div class="spinner"></div>
     <div style="font-weight: 600; color: #e6703b;">处理中...</div>
@@ -132,7 +140,7 @@
 
   <div class="container">
     
-    <!-- ================= 💡 紧凑版首页 ================= -->
+    <!-- ================= 首页 ================= -->
     <div v-if="view === 'home'">
       <div class="card home-card" style="background: linear-gradient(135deg, #fff, #fdfaf6);">
         <h2 style="font-size: 20px; margin-bottom: 4px;">👋 欢迎回家</h2>
@@ -142,19 +150,19 @@
       <div class="card home-card">
         <h2>⚡ 快捷操作</h2>
         <div class="quick-actions">
-          <div class="quick-btn" @click="view='wardrobe'; openAddWardrobe()">
+          <div class="quick-btn" @click="switchView('wardrobe'); openAddWardrobe()">
             <div class="quick-icon">👕</div>
             <div class="quick-text">加衣服</div>
           </div>
-          <div class="quick-btn" @click="view='supplies'; openAddSupply()">
+          <div class="quick-btn" @click="switchView('supplies'); openAddSupply()">
             <div class="quick-icon">🧻</div>
             <div class="quick-text">加用品</div>
           </div>
-          <div class="quick-btn" @click="view='storage'; openAddLocation()">
+          <div class="quick-btn" @click="switchView('storage'); openAddLocation()">
             <div class="quick-icon">📦</div>
             <div class="quick-text">建箱子</div>
           </div>
-          <div class="quick-btn" @click="view='todo'">
+          <div class="quick-btn" @click="switchView('todo')">
             <div class="quick-icon">🛒</div>
             <div class="quick-text">看清单</div>
           </div>
@@ -173,7 +181,7 @@
               </div>
               <div style="font-size: 11px; color: #666; margin-top: 4px;">📍 {{ getLocationName(item.location_id) || '未指定位置' }}</div>
             </div>
-            <button class="btn small" style="background: #e6703b; padding: 6px 10px;" @click="view='supplies'">查看</button>
+            <button class="btn small" style="background: #e6703b; padding: 6px 10px;" @click="switchView('supplies')">查看</button>
           </div>
           <div v-if="urgentSupplies.length > 2" style="font-size: 12px; color: #999; text-align: center; margin-top: 4px;">还有 {{ urgentSupplies.length - 2 }} 项...</div>
         </div>
@@ -242,7 +250,7 @@
       <!-- 网格模式 -->
       <div v-if="displayMode === 'grid'" class="grid-2">
         <div class="item-card-grid" v-for="item in filteredWardrobe" :key="item.id" @click="openEditWardrobe(item)">
-          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" />
+          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" @click.stop="previewImage = item.image_url" />
           <div class="item-info-grid">
             <div class="item-name">{{ item.name }}</div>
             <div class="item-meta">
@@ -256,7 +264,7 @@
         </div>
       </div>
 
-      <!-- 列表模式（左滑删除） -->
+      <!-- 列表模式 -->
       <div v-if="displayMode === 'list'" class="list-1">
         <div class="swipe-wrapper" v-for="item in filteredWardrobe" :key="item.id">
           <div class="swipe-delete-btn" @click.stop="quickDeleteItem(item, 'wardrobe')">删除</div>
@@ -278,7 +286,7 @@
                   📍 {{ getLocationName(item.location_id) }}
                 </div>
               </div>
-              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" />
+              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" @click.stop="previewImage = item.image_url" />
             </div>
           </div>
         </div>
@@ -308,7 +316,7 @@
       <div v-if="displayMode === 'grid'" class="grid-2">
         <div class="item-card-grid" v-for="loc in filteredLocations" :key="loc.id" @click="openStorageDetail(loc)">
           <div style="position: relative;">
-            <img :src="loc.image_url || 'https://via.placeholder.com/200?text=Box'" class="item-img-grid" />
+            <img :src="loc.image_url || 'https://via.placeholder.com/200?text=Box'" class="item-img-grid" @click.stop="previewImage = loc.image_url" />
             <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; padding: 6px 10px; font-size: 13px; font-weight: bold;">
               📦 {{ getItemsCountInLoc(loc.id) }} 件
             </div>
@@ -328,7 +336,7 @@
             <div class="item-meta" style="margin-top: 6px;">📦 共 {{ getItemsCountInLoc(loc.id) }} 件物品</div>
             <div class="item-meta" style="font-size: 12px; color: #999;">{{ loc.description }}</div>
           </div>
-          <img :src="loc.image_url || 'https://via.placeholder.com/100?text=Box'" class="item-img-list" />
+          <img :src="loc.image_url || 'https://via.placeholder.com/100?text=Box'" class="item-img-list" @click.stop="previewImage = loc.image_url" />
         </div>
       </div>
 
@@ -341,9 +349,12 @@
     <div v-if="view === 'storage_detail' && currentLocation">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <button class="btn secondary" @click="closeStorageDetail">⬅️ 返回收纳库</button>
-        <button class="btn" :style="{background: storageDetailBatchMode ? '#d14a4a' : '#4A90E2'}" @click="toggleStorageBatchMode">
-          {{ storageDetailBatchMode ? '取消批量' : '批量管理' }}
-        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn small" style="background: #eaf6ec; color: #2b703b;" @click="copyStorageList">📋 复制清单</button>
+          <button class="btn small" :style="{background: storageDetailBatchMode ? '#d14a4a' : '#4A90E2'}" @click="toggleStorageBatchMode">
+            {{ storageDetailBatchMode ? '取消批量' : '批量管理' }}
+          </button>
+        </div>
       </div>
 
       <div class="card">
@@ -371,7 +382,7 @@
           <div v-if="storageDetailBatchMode" style="position: absolute; top: 8px; left: 8px; z-index: 10; width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center;">
             <div v-if="isItemSelected(item)" style="width: 14px; height: 14px; background: #d14a4a; border-radius: 50%;"></div>
           </div>
-          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" />
+          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" @click.stop="previewImage = item.image_url" />
           <div class="item-info-grid">
             <div class="item-name">{{ item.name }}</div>
             <div class="item-meta">
@@ -407,7 +418,7 @@
                     </div>
                  </div>
               </div>
-              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" />
+              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" @click.stop="previewImage = item.image_url" />
             </div>
           </div>
         </div>
@@ -416,7 +427,7 @@
 
     <!-- ================= 日用品 ================= -->
     <div v-if="view === 'supplies'">
-      <div class="card" style="background: #fff5ef; display: flex; justify-content: space-between; align-items: center; padding: 16px;" @click="view='todo'">
+      <div class="card" style="background: #fff5ef; display: flex; justify-content: space-between; align-items: center; padding: 16px;" @click="switchView('todo')">
         <div>
           <h2 style="margin: 0; color: #c46838;">🛒 采购清单</h2>
           <p style="font-size: 12px; color: #c46838; margin-top: 4px;">有 {{ todoList.length }} 项需要补货</p>
@@ -437,6 +448,8 @@
           <div class="filter-btn" :class="{active: filterSupply==='洗护'}" @click="filterSupply='洗护'">洗护</div>
           <div class="filter-btn" :class="{active: filterSupply==='药品'}" @click="filterSupply='药品'">药品</div>
           <div class="filter-btn" :class="{active: filterSupply==='被子/床品'}" @click="filterSupply='被子/床品'">被子/床品</div>
+          <div class="filter-btn" :class="{active: filterSupply==='零食'}" @click="filterSupply='零食'">零食</div>
+          <div class="filter-btn" :class="{active: filterSupply==='五金'}" @click="filterSupply='五金'">五金</div>
         </div>
         <select v-model="filterSupplySeason" class="season-select">
           <option value="all">🌤️ 所有季节</option>
@@ -449,24 +462,28 @@
       <!-- 网格模式 -->
       <div v-if="displayMode === 'grid'" class="grid-2">
         <div class="item-card-grid" v-for="item in filteredSupplies" :key="item.id" @click="openEditSupply(item)">
-          <img :src="item.image_url || 'https://via.placeholder.com/200?text=Item'" class="item-img-grid" />
+          <img :src="item.image_url || 'https://via.placeholder.com/200?text=Item'" class="item-img-grid" @click.stop="previewImage = item.image_url" />
           <div class="item-info-grid">
             <div class="item-name">{{ item.name }}</div>
             <div class="item-meta">
               <span class="tag orange">{{ item.category }}</span>
               <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
             </div>
-            <div class="item-meta" style="color: #e6703b; font-weight: 600; margin-top: 4px;">
-              📦 库存: {{ item.quantity }} {{ item.unit }}
-            </div>
-            <div class="item-meta" style="font-size: 11px; color: #999;">
-              📍 {{ getLocationName(item.location_id) || item.location || '未指定位置' }}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+              <div style="font-size: 12px; color: #999;">
+                📍 {{ getLocationName(item.location_id) || item.location || '未指定位置' }}
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;" @click.stop>
+                <button class="btn small secondary" style="padding: 4px 8px; font-size: 12px;" @click="adjustSupply(item, -1)">-</button>
+                <div style="font-weight: bold; font-size: 14px; color: #e6703b;">{{ item.quantity }}</div>
+                <button class="btn small secondary" style="padding: 4px 8px; font-size: 12px;" @click="adjustSupply(item, 1)">+</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 列表模式（左滑删除） -->
+      <!-- 列表模式 -->
       <div v-if="displayMode === 'list'" class="list-1">
         <div class="swipe-wrapper" v-for="item in filteredSupplies" :key="item.id">
           <div class="swipe-delete-btn" @click.stop="quickDeleteItem(item, 'supply')">删除</div>
@@ -504,9 +521,11 @@
 
     <!-- ================= 采购清单 ================= -->
     <div v-if="view === 'todo'">
-      <button class="btn secondary" style="margin-bottom: 16px;" @click="view='supplies'">⬅️ 返回日用品</button>
+      <button class="btn secondary" style="margin-bottom: 16px;" @click="switchView('supplies')">⬅️ 返回日用品</button>
       <div class="card">
         <h2>🛒 待补货清单</h2>
+        <p style="font-size: 13px; color: #999; margin-top: 4px;">💡 买完后勾选并点击下方按钮，会自动增加库存</p>
+        
         <div v-if="todoList.length === 0" class="empty-text">太棒了，目前没有需要补货的物品！</div>
         <div v-for="(item, index) in todoList" :key="index" class="list-row">
           <div style="font-weight: 600;">{{ item.name }}</div>
@@ -514,6 +533,10 @@
             {{ item.done ? '已购买' : '未购买' }}
           </button>
         </div>
+        
+        <button v-if="todoList.some(i => i.done)" class="btn" style="width: 100%; margin-top: 20px; background: #2b703b;" @click="importCheckedToStock">
+          ✅ 确认勾选物品入库
+        </button>
       </div>
     </div>
 
@@ -526,7 +549,7 @@
           <div :class="{active: displayMode === 'grid'}" @click="setDisplayMode('grid')">🔳 大图模式</div>
           <div :class="{active: displayMode === 'list'}" @click="setDisplayMode('list')">☰ 小图列表</div>
         </div>
-        <p style="font-size: 12px; color: #999; margin-top: 8px;">💡 小图列表模式下，向左滑动单条数据可快速删除。</p>
+        <p style="font-size: 12px; color: #999; margin-top: 8px;">💡 小图列表模式下，向左滑动单条数据可快速删除。点击所有图片均可放大查看。</p>
       </div>
 
       <div class="card">
@@ -545,11 +568,11 @@
 
   <!-- 底部导航 -->
   <div class="tab-bar">
-    <div class="tab-item" :class="{active: view==='home'}" @click="view='home'"><span class="tab-icon">🏠</span><span class="tab-label">首页</span></div>
-    <div class="tab-item" :class="{active: view==='wardrobe'}" @click="view='wardrobe'"><span class="tab-icon">👕</span><span class="tab-label">衣物库</span></div>
-    <div class="tab-item" :class="{active: view==='storage' || view==='storage_detail'}" @click="view='storage'; closeStorageDetail();"><span class="tab-icon">📦</span><span class="tab-label">收纳库</span></div>
-    <div class="tab-item" :class="{active: view==='supplies' || view==='todo'}" @click="view='supplies'"><span class="tab-icon">🧻</span><span class="tab-label">日用品</span></div>
-    <div class="tab-item" :class="{active: view==='setting'}" @click="view='setting'"><span class="tab-icon">⚙️</span><span class="tab-label">设置</span></div>
+    <div class="tab-item" :class="{active: view==='home'}" @click="switchView('home')"><span class="tab-icon">🏠</span><span class="tab-label">首页</span></div>
+    <div class="tab-item" :class="{active: view==='wardrobe'}" @click="switchView('wardrobe')"><span class="tab-icon">👕</span><span class="tab-label">衣物库</span></div>
+    <div class="tab-item" :class="{active: view==='storage' || view==='storage_detail'}" @click="switchView('storage'); closeStorageDetail();"><span class="tab-icon">📦</span><span class="tab-label">收纳库</span></div>
+    <div class="tab-item" :class="{active: view==='supplies' || view==='todo'}" @click="switchView('supplies')"><span class="tab-icon">🧻</span><span class="tab-label">日用品</span></div>
+    <div class="tab-item" :class="{active: view==='setting'}" @click="switchView('setting')"><span class="tab-icon">⚙️</span><span class="tab-label">设置</span></div>
   </div>
 
   <!-- ================= 弹窗：新建/编辑 收纳容器 ================= -->
@@ -565,7 +588,7 @@
           <div style="color: #999; font-size: 14px;">点击拍照</div>
         </template>
         <template v-else>
-          <img :src="locModal.form.image_url" class="upload-preview" />
+          <img :src="locModal.form.image_url" class="upload-preview" @click="previewImage = locModal.form.image_url" />
           <div class="success-text">✅ 已上传</div>
         </template>
       </div>
@@ -605,7 +628,7 @@
           <div style="color: #999; font-size: 14px;">点击上传</div>
         </template>
         <template v-else>
-          <img :src="modal.form.image_url" class="upload-preview" />
+          <img :src="modal.form.image_url" class="upload-preview" @click="previewImage = modal.form.image_url" />
           <div class="success-text">✅ 已上传</div>
         </template>
       </div>
@@ -690,7 +713,7 @@
           <div style="color: #999; font-size: 14px;">点击上传</div>
         </template>
         <template v-else>
-          <img :src="supplyModal.form.image_url" class="upload-preview" />
+          <img :src="supplyModal.form.image_url" class="upload-preview" @click="previewImage = supplyModal.form.image_url" />
           <div class="success-text">✅ 已上传</div>
         </template>
       </div>
@@ -709,6 +732,8 @@
             <option value="洗护">洗护</option>
             <option value="药品">药品</option>
             <option value="被子/床品">被子/床品</option>
+            <option value="零食">零食</option>
+            <option value="五金">五金</option>
             <option value="其他">其他</option>
           </select>
         </div>
@@ -801,6 +826,7 @@ createApp({
       view: 'home',
       isUploading: false,
       displayMode: localStorage.getItem('displayMode') || 'grid',
+      previewImage: '', // 放大图片的URL
       
       showConfigModal: false,
       showKey: false,
@@ -850,7 +876,7 @@ createApp({
   
   computed: {
     seasonTip() {
-      const month = new Date().getMonth() + 1; // 1-12
+      const month = new Date().getMonth() + 1;
       if (month >= 3 && month <= 5) return "🌸 春暖花开，可以开始准备把厚重的冬装收进床底啦，顺便看看春夏的衣服有没有需要补货的。";
       if (month >= 6 && month <= 8) return "☀️ 夏日炎炎，短袖短裤都找出来了吗？空调被准备好哦。";
       if (month >= 9 && month <= 11) return "🍁 秋意渐浓，早晚温差大，记得把长袖和薄外套整理出来，冬被也可以拿出来晒晒了。";
@@ -860,15 +886,12 @@ createApp({
     recentItems() {
       const wardrobes = this.wardrobeData.map(i => ({...i, type: 'wardrobe', unique_id: 'w_'+i.id}));
       const supplies = this.suppliesData.map(i => ({...i, type: 'supply', unique_id: 's_'+i.id}));
-      
       const all = [...wardrobes, ...supplies];
-      
       all.sort((a, b) => {
         const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
         const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
         return timeB - timeA;
       });
-      
       return all.slice(0, 5); 
     },
 
@@ -883,12 +906,10 @@ createApp({
 
     filteredWardrobe() {
       const kw = this.searchWardrobe.trim().toLowerCase();
-      
       return this.wardrobeData.filter(item => {
         const matchOwner = this.filterOwner === 'all' || item.owner === this.filterOwner;
         const matchSeason = this.filterSeason === 'all' || item.season === this.filterSeason;
         if (!matchOwner || !matchSeason) return false;
-        
         if (!kw) return true;
         const locName = this.getLocationName(item.location_id) || '';
         const searchStr = `${item.name} ${item.category} ${item.size} ${item.season} ${locName}`.toLowerCase();
@@ -898,12 +919,10 @@ createApp({
     
     filteredSupplies() {
       const kw = this.searchSupply.trim().toLowerCase();
-      
       return this.suppliesData.filter(item => {
         const matchCategory = this.filterSupply === 'all' || item.category === this.filterSupply;
         const matchSeason = this.filterSupplySeason === 'all' || item.season === this.filterSupplySeason;
         if (!matchCategory || !matchSeason) return false;
-        
         if (!kw) return true;
         const locName = this.getLocationName(item.location_id) || item.location || '';
         const searchStr = `${item.name} ${item.category} ${item.season} ${locName}`.toLowerCase();
@@ -919,7 +938,13 @@ createApp({
       });
     },
     todoList() {
-      return this.urgentSupplies.map(item => ({ name: item.name, done: false }));
+      return this.urgentSupplies.map(item => ({ 
+        id: item.id, 
+        name: item.name, 
+        originalQuantity: Number(item.quantity),
+        unit: item.unit,
+        done: false 
+      }));
     }
   },
   
@@ -932,6 +957,11 @@ createApp({
   },
   
   methods: {
+    switchView(newView) {
+      this.view = newView;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
     setDisplayMode(mode) {
       this.displayMode = mode;
       localStorage.setItem('displayMode', mode);
@@ -939,10 +969,10 @@ createApp({
 
     handleRecentClick(item) {
       if (item.type === 'wardrobe') {
-        this.view = 'wardrobe';
+        this.switchView('wardrobe');
         setTimeout(() => this.openEditWardrobe(item), 100);
       } else {
-        this.view = 'supplies';
+        this.switchView('supplies');
         setTimeout(() => this.openEditSupply(item), 100);
       }
     },
@@ -1015,12 +1045,10 @@ createApp({
     // 左滑逻辑相关方法
     onTouchStart(e, id) {
       if (this.storageDetailBatchMode && this.view === 'storage_detail') return;
-      
       if (this.openSwipeId && this.openSwipeId !== id) {
         this.swipeOffsets[this.openSwipeId] = 0;
         this.openSwipeId = null;
       }
-
       this.touchStartX = e.touches[0].clientX;
       this.touchStartY = e.touches[0].clientY;
       this.swipingId = id;
@@ -1034,13 +1062,10 @@ createApp({
 
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
         if (e.cancelable) e.preventDefault(); 
-
         let baseOffset = (this.openSwipeId === id) ? -80 : 0;
         let newOffset = baseOffset + deltaX;
-
         if (newOffset > 0) newOffset = 0;
         if (newOffset < -80) newOffset = -80;
-
         this.swipeOffsets[id] = newOffset;
       }
     },
@@ -1064,7 +1089,6 @@ createApp({
         this.openSwipeId = null;
         return;
       }
-      
       if (type === 'wardrobe') this.openEditWardrobe(item);
       else this.openEditSupply(item);
     },
@@ -1082,7 +1106,6 @@ createApp({
     },
     closeAllSwipes(e) {
       if (e && e.target && e.target.classList.contains('swipe-delete-btn')) return;
-      
       if (this.openSwipeId) {
         this.swipeOffsets[this.openSwipeId] = 0;
         this.openSwipeId = null;
@@ -1114,6 +1137,65 @@ createApp({
       }
     },
 
+    // 采购清单一键入库
+    async importCheckedToStock() {
+      const checkedItems = this.todoList.filter(i => i.done);
+      if (checkedItems.length === 0) return;
+      
+      if (!confirm(`确定将勾选的 ${checkedItems.length} 件物品加入库存吗？`)) return;
+      
+      this.isUploading = true;
+      try {
+        // 循环更新数据库中的库存数量
+        for (let item of checkedItems) {
+          // 由于我们在清单生成时丢失了原来的数量，需要先查一下最新库存再更新
+          const dbItem = this.suppliesData.find(s => s.id === item.id);
+          if (dbItem) {
+            const newQty = Number(dbItem.quantity) + 1; 
+            await this.supabase.from('supplies').update({ quantity: newQty }).eq('id', item.id);
+          }
+        }
+        
+        await this.fetchData();
+        alert("✅ 入库成功！库存已增加。");
+      } catch (err) {
+        alert("入库失败：" + err.message);
+      } finally {
+        this.isUploading = false;
+      }
+    },
+
+    // 复制收纳清单
+    copyStorageList() {
+      const items = this.getStorageItems();
+      if (items.length === 0) {
+        alert("箱子里没有物品");
+        return;
+      }
+      
+      let text = `【${this.currentLocation.code} - ${this.currentLocation.name}】共有 ${items.length} 件物品：\n`;
+      items.forEach((item, index) => {
+        if (item.type === 'wardrobe') {
+          text += `${index+1}. ${item.name} (尺码: ${item.size || '无'})\n`;
+        } else {
+          text += `${index+1}. ${item.name} (数量: ${item.quantity}${item.unit})\n`;
+        }
+      });
+      
+      // 复制到剪贴板
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        alert("✅ 清单已复制，可以去微信粘贴发给家人啦！");
+      } catch (err) {
+        alert("复制失败，请重试");
+      }
+      document.body.removeChild(textArea);
+    },
+
     // --- 收纳容器逻辑 ---
     openAddLocation() {
       this.locModal = { show: true, isEdit: false, form: { id: null, code: '', name: '', description: '', image_url: '' } };
@@ -1124,12 +1206,12 @@ createApp({
     
     openStorageDetail(loc) {
       this.currentLocation = loc;
-      this.view = 'storage_detail';
+      this.switchView('storage_detail');
       this.storageDetailBatchMode = false;
       this.selectedStorageItems = [];
     },
     closeStorageDetail() {
-      this.view = 'storage';
+      this.switchView('storage');
       this.currentLocation = null;
       this.storageDetailBatchMode = false;
       this.selectedStorageItems = [];
