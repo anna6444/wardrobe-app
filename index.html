@@ -35,8 +35,13 @@
     .tag.orange { background: #fff1e6; color: #c46838; }
     .tag.green { background: #eaf6ec; color: #2b703b; }
 
-    /* 筛选 */
+    /* 搜索框与筛选 */
     .filter-container { margin-bottom: 16px; }
+    .search-box { position: relative; margin-bottom: 10px; }
+    .search-box input { width: 100%; padding: 12px 16px 12px 40px; border-radius: 20px; border: 1px solid #e8e2d6; background: #fff; font-size: 14px; outline: none; transition: border 0.2s; }
+    .search-box input:focus { border-color: #e6703b; }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #999; }
+    
     .filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;}
     .filter-btn { padding: 8px 16px; background: #fff; border: 1px solid #e8e2d6; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; }
     .filter-btn.active { background: #e6703b; color: white; border-color: #e6703b; font-weight: 600; }
@@ -53,7 +58,7 @@
     .item-img-grid { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f9f9f9; display: block; }
     .item-info-grid { padding: 12px; }
 
-    /* 列表与卡片：列表模式 (一条一条，图片在右) */
+    /* 列表与卡片：列表模式 */
     .list-1 { display: flex; flex-direction: column; gap: 10px; }
     .item-card-list { background: #fff; border-radius: 16px; border: 1px solid #eee; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; overflow: hidden; }
     .item-info-list { flex: 1; min-width: 0; padding-right: 16px;}
@@ -141,6 +146,12 @@
     <!-- ================= 衣物库 ================= -->
     <div v-if="view === 'wardrobe'">
       <div class="filter-container">
+        <!-- 💡 新增：搜索框 -->
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input v-model="searchWardrobe" placeholder="搜索颜色、名称、品类或位置..." />
+        </div>
+        
         <div class="filter-bar">
           <div class="filter-btn" :class="{active: filterOwner==='all'}" @click="filterOwner='all'">全部</div>
           <div class="filter-btn" :class="{active: filterOwner==='dad'}" @click="filterOwner='dad'">👨爸爸</div>
@@ -194,7 +205,7 @@
         </div>
       </div>
 
-      <div v-if="filteredWardrobe.length === 0" class="empty-text">暂无衣物</div>
+      <div v-if="filteredWardrobe.length === 0" class="empty-text">没有找到相关衣物</div>
       
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddWardrobe">+</button>
     </div>
@@ -251,6 +262,12 @@
       </div>
 
       <div class="filter-container">
+        <!-- 💡 新增：搜索框 -->
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input v-model="searchSupply" placeholder="搜索名称、分类或位置..." />
+        </div>
+
         <div class="filter-bar">
           <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filterSupply='all'">全部</div>
           <div class="filter-btn" :class="{active: filterSupply==='纸品'}" @click="filterSupply='纸品'">纸品</div>
@@ -308,7 +325,7 @@
         </div>
       </div>
 
-      <div v-if="filteredSupplies.length === 0" class="empty-text">暂无物品</div>
+      <div v-if="filteredSupplies.length === 0" class="empty-text">没有找到相关物品</div>
 
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddSupply">+</button>
     </div>
@@ -330,8 +347,6 @@
 
     <!-- ================= 设置 ================= -->
     <div v-if="view === 'setting'">
-      
-      <!-- 💡 新增：全局视图切换 -->
       <div class="card">
         <h2>🖼️ 浏览模式偏好</h2>
         <p style="font-size: 13px; color: #666; margin-bottom: 8px;">选择你喜欢的列表展示方式，全站生效。</p>
@@ -523,7 +538,7 @@
     </div>
   </div>
 
-  <!-- ================= 💡 修改后的：添加/编辑日用品 ================= -->
+  <!-- ================= 弹窗：添加/编辑日用品 ================= -->
   <div class="modal-mask" v-if="supplyModal.show" @click.self="supplyModal.show=false">
     <div class="modal-box">
       <h3 style="margin-bottom: 16px;">{{ supplyModal.isEdit ? '编辑日用品' : '添加日用品' }}</h3>
@@ -541,13 +556,11 @@
         </template>
       </div>
 
-      <!-- 第一行：名称 -->
       <div class="input-wrap">
         <label>物品名称 <span style="color:red">*</span></label>
         <input v-model="supplyModal.form.name" placeholder="如：抽纸 / 冬被" />
       </div>
 
-      <!-- 第二行：分类 + 季节 -->
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
           <label>分类</label>
@@ -573,7 +586,6 @@
         </div>
       </div>
 
-      <!-- 第三行：存放位置（独占一行，突出显示） -->
       <div class="input-wrap" style="background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
         <label style="color: #d14a4a; font-weight: 600;">📍 存放在哪？</label>
         <select v-model="supplyModal.form.location_id" style="border-color: #fce8e8;">
@@ -584,7 +596,6 @@
         </select>
       </div>
 
-      <!-- 第四行：数量 + 单位 -->
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
           <label>当前数量</label>
@@ -596,7 +607,6 @@
         </div>
       </div>
 
-      <!-- 第五行：低库存 + 保质期 -->
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
           <label>低库存提醒 (≤)</label>
@@ -651,8 +661,6 @@ createApp({
     return {
       view: 'home',
       isUploading: false,
-      
-      // 视图模式（全局），默认大图
       displayMode: localStorage.getItem('displayMode') || 'grid',
       
       showConfigModal: false,
@@ -668,6 +676,9 @@ createApp({
       suppliesData: [],
       locationsData: [],
       
+      // 搜索与筛选状态
+      searchWardrobe: '',
+      searchSupply: '',
       filterOwner: 'all',
       filterSeason: 'all',
       filterSupply: 'all',
@@ -693,19 +704,42 @@ createApp({
   
   computed: {
     filteredWardrobe() {
+      const kw = this.searchWardrobe.trim().toLowerCase();
+      
       return this.wardrobeData.filter(item => {
+        // 1. 基础筛选
         const matchOwner = this.filterOwner === 'all' || item.owner === this.filterOwner;
         const matchSeason = this.filterSeason === 'all' || item.season === this.filterSeason;
-        return matchOwner && matchSeason;
+        if (!matchOwner || !matchSeason) return false;
+        
+        // 2. 模糊搜索
+        if (!kw) return true;
+        
+        const locName = this.getLocationName(item.location_id) || '';
+        // 把所有能搜的文字拼起来，转小写
+        const searchStr = `${item.name} ${item.category} ${item.size} ${item.season} ${locName}`.toLowerCase();
+        return searchStr.includes(kw);
       });
     },
+    
     filteredSupplies() {
+      const kw = this.searchSupply.trim().toLowerCase();
+      
       return this.suppliesData.filter(item => {
+        // 1. 基础筛选
         const matchCategory = this.filterSupply === 'all' || item.category === this.filterSupply;
         const matchSeason = this.filterSupplySeason === 'all' || item.season === this.filterSupplySeason;
-        return matchCategory && matchSeason;
+        if (!matchCategory || !matchSeason) return false;
+        
+        // 2. 模糊搜索
+        if (!kw) return true;
+        
+        const locName = this.getLocationName(item.location_id) || item.location || '';
+        const searchStr = `${item.name} ${item.category} ${item.season} ${locName}`.toLowerCase();
+        return searchStr.includes(kw);
       });
     },
+    
     urgentSupplies() {
       return this.suppliesData.filter(item => {
         const isExpiring = this.getDaysLeft(item.expire_date) <= 30;
@@ -900,7 +934,6 @@ createApp({
       };
     },
     openEditSupply(item) {
-      // 如果是从收纳箱里点开的，可能带有额外的 type 属性，我们只取需要的数据
       const formData = {
         id: item.id,
         name: item.name,
