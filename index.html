@@ -114,7 +114,7 @@
     .recent-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 60px; margin: 0 auto; }
     .recent-type { font-size: 9px; color: #999; }
 
-    /* 💡 图片全屏预览 & 海报生成 */
+    /* 图片全屏预览 & 海报生成 */
     .img-preview-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .img-preview-box { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; padding: 20px; }
     .img-preview-box img { max-width: 95vw; max-height: 80vh; border-radius: 8px; object-fit: contain; }
@@ -481,16 +481,14 @@
         </div>
 
         <div class="filter-bar">
-          <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filter>
-Supply='all'">全部</div>
+          <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filterSupply='all'">全部</div>
           <div class="filter-btn" :class="{active: filterSupply==='纸品'}" @click="filterSupply='纸品'">纸品</div>
           <div class="filter-btn" :class="{active: filterSupply==='清洁'}" @click="filterSupply='清洁'">清洁</div>
           <div class="filter-btn" :class="{active: filterSupply==='洗护'}" @click="filterSupply='洗护'">洗护</div>
           <div class="filter-btn" :class="{active: filterSupply==='药品'}" @click="filterSupply='药品'">药品</div>
           <div class="filter-btn" :class="{active: filterSupply==='被子/床品'}" @click="filterSupply='被子/床品'">被子/床品</div>
-          <div class="filter-btn       " :class="{active: filter </Supply==='div五金'}" @click>
-="filterSupply='五金'     ">五金</div>
-        </ </div>
+          <div class="filter-btn" :class="{active: filterSupply==='五金'}" @click="filterSupply='五金'">五金</div>
+        </div>
         <select v-model="filterSupplySeason" class="season-select">
           <option value="all">🌤️ 所有季节</option>
           <option value="冬季">❄️ 冬季</option>
@@ -519,7 +517,9 @@ Supply='all'">全部</div>
                 <button class="btn small secondary" style="padding: 4px 8px; font-size: 12px;" @click="adjustSupply(item, 1)">+</button>
               </div>
             </div>
-          </divdiv>
+          </div>
+        </div>
+      </div>
 
       <!-- 列表模式 -->
       <div v-if="displayMode === 'list'" class="list-1">
@@ -1101,28 +1101,29 @@ createApp({
       const locInfo = this.locationsData.find(l => l.id === item.location_id);
       
       const loadImg = (src) => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           if(!src) return resolve(null);
           const img = new Image();
           img.crossOrigin = "anonymous";
           img.onload = () => resolve(img);
-          img.onerror = () => reject(new Error("图片加载失败"));
+          img.onerror = () => resolve(null); // 即使加载失败也继续，不中断
           img.src = src;
         });
       };
 
       try {
-        // 同时加载物品大图和收纳箱小图
         const [mainImg, locImg] = await Promise.all([
           loadImg(item.image_url),
           loadImg(locInfo ? locInfo.image_url : null)
         ]);
         
+        if (!mainImg) throw new Error("物品图片加载失败");
+
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
         const canvasW = 800;
-        const canvasH = 1040; // 稍微加高一点以便放下底部信息
+        const canvasH = 1040; 
         canvas.width = canvasW;
         canvas.height = canvasH;
         
@@ -1148,9 +1149,9 @@ createApp({
         const cardY = imgY + imgSize + 20;
         const cardH = 220;
         ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.roundRect(40, cardY, 720, cardH, 20);
-        ctx.fill();
+        
+        // 兼容性处理：使用普通矩形代替 roundRect，防止白屏
+        ctx.fillRect(40, cardY, 720, cardH); 
         
         let textStartX = 70;
 
@@ -1161,24 +1162,35 @@ createApp({
           const locImgY = cardY + 60;
           
           ctx.save();
+          // 兼容性裁剪（使用圆角矩形路径）
           ctx.beginPath();
-          ctx.roundRect(locImgX, locImgY, locImgSize, locImgSize, 12);
+          const radius = 12;
+          ctx.moveTo(locImgX + radius, locImgY);
+          ctx.lineTo(locImgX + locImgSize - radius, locImgY);
+          ctx.quadraticCurveTo(locImgX + locImgSize, locImgY, locImgX + locImgSize, locImgY + radius);
+          ctx.lineTo(locImgX + locImgSize, locImgY + locImgSize - radius);
+          ctx.quadraticCurveTo(locImgX + locImgSize, locImgY + locImgSize, locImgX + locImgSize - radius, locImgY + locImgSize);
+          ctx.lineTo(locImgX + radius, locImgY + locImgSize);
+          ctx.quadraticCurveTo(locImgX, locImgY + locImgSize, locImgX, locImgY + locImgSize - radius);
+          ctx.lineTo(locImgX, locImgY + radius);
+          ctx.quadraticCurveTo(locImgX, locImgY, locImgX + radius, locImgY);
+          ctx.closePath();
           ctx.clip();
           
           const locScale = Math.max(locImgSize / locImg.width, locImgSize / locImg.height);
           const locDrawW = locImg.width * locScale;
           const locDrawH = locImg.height * locScale;
-          ctx.drawImage(locImg, locImgX + (locImgSize - locDrawW)/2, locImgY + (locImgSize - locImgH)/2, locDrawW, locDrawH);
+          ctx.drawImage(locImg, locImgX + (locImgSize - locDrawW)/2, locImgY + (locImgSize - locDrawH)/2, locDrawW, locDrawH);
           ctx.restore();
           
           // 给收纳箱图加个边框
           ctx.strokeStyle = '#e8e2d6';
           ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.roundRect(locImgX, locImgY, locImgSize, locImgSize, 12);
+          ctx.rect(locImgX, locImgY, locImgSize, locImgSize);
           ctx.stroke();
           
-          textStartX = 180; // 文字向右偏移
+          textStartX = 180; 
         }
         
         // 绘制文字信息
@@ -1208,8 +1220,8 @@ createApp({
         this.posterUrl = canvas.toDataURL('image/jpeg', 0.9);
         
       } catch (e) {
-        console.error("Canvas Tainted:", e);
-        alert("生成分享图失败：可能是因为图片跨域限制。如果一直失败，请检查 Supabase 存储桶是否允许跨域。");
+        console.error("Canvas Error:", e);
+        alert("生成分享图失败：可能是因为图片跨域安全限制。您可以直接截图当前页面发送给家人。");
       } finally {
         this.isUploading = false;
       }
