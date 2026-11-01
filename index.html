@@ -35,17 +35,16 @@
     .tag.orange { background: #fff1e6; color: #c46838; }
     .tag.green { background: #eaf6ec; color: #2b703b; }
 
-    /* 筛选与视图切换 */
+    /* 筛选 */
     .filter-container { margin-bottom: 16px; }
-    .filter-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .filter-bar { display: flex; gap: 10px; overflow-x: auto; flex: 1; padding-bottom: 4px;}
+    .filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;}
     .filter-btn { padding: 8px 16px; background: #fff; border: 1px solid #e8e2d6; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; }
     .filter-btn.active { background: #e6703b; color: white; border-color: #e6703b; font-weight: 600; }
-    .season-select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #e8e2d6; font-size: 14px; background: #fff; color: #555; margin-bottom: 10px;}
+    .season-select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #e8e2d6; font-size: 14px; background: #fff; color: #555; margin-top: 10px;}
     
-    /* 💡 视图切换按钮 */
-    .view-toggle { display: flex; background: #e8e2d6; border-radius: 8px; padding: 2px; margin-left: 10px; flex-shrink: 0;}
-    .view-toggle div { padding: 4px 8px; border-radius: 6px; font-size: 14px; cursor: pointer; color: #666; transition: all 0.2s;}
+    /* 视图切换按钮（设置页） */
+    .view-toggle { display: flex; background: #e8e2d6; border-radius: 12px; padding: 4px; margin-top: 10px; }
+    .view-toggle div { flex: 1; text-align: center; padding: 10px; border-radius: 8px; font-size: 15px; cursor: pointer; color: #666; transition: all 0.2s;}
     .view-toggle div.active { background: #fff; color: #e6703b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: bold;}
 
     /* 列表与卡片：网格模式 */
@@ -54,10 +53,10 @@
     .item-img-grid { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f9f9f9; display: block; }
     .item-info-grid { padding: 12px; }
 
-    /* 💡 列表与卡片：列表模式 (一条一条，图片在右) */
+    /* 列表与卡片：列表模式 (一条一条，图片在右) */
     .list-1 { display: flex; flex-direction: column; gap: 10px; }
     .item-card-list { background: #fff; border-radius: 16px; border: 1px solid #eee; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; overflow: hidden; }
-    .item-info-list { flex: 1; min-width: 0; padding-right: 16px;} /* 防止文字溢出撑开 */
+    .item-info-list { flex: 1; min-width: 0; padding-right: 16px;}
     .item-img-list { width: 70px; height: 70px; border-radius: 12px; object-fit: cover; background: #f9f9f9; flex-shrink: 0; }
 
     .item-name { font-weight: 600; font-size: 15px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -142,19 +141,12 @@
     <!-- ================= 衣物库 ================= -->
     <div v-if="view === 'wardrobe'">
       <div class="filter-container">
-        <div class="filter-row">
-          <div class="filter-bar">
-            <div class="filter-btn" :class="{active: filterOwner==='all'}" @click="filterOwner='all'">全部</div>
-            <div class="filter-btn" :class="{active: filterOwner==='dad'}" @click="filterOwner='dad'">👨爸爸</div>
-            <div class="filter-btn" :class="{active: filterOwner==='mom'}" @click="filterOwner='mom'">👩妈妈</div>
-            <div class="filter-btn" :class="{active: filterOwner==='sister'}" @click="filterOwner='sister'">👧姐姐</div>
-            <div class="filter-btn" :class="{active: filterOwner==='brother'}" @click="filterOwner='brother'">👦弟弟</div>
-          </div>
-          <!-- 视图切换 -->
-          <div class="view-toggle">
-            <div :class="{active: displayMode === 'grid'}" @click="setDisplayMode('grid')">🔳</div>
-            <div :class="{active: displayMode === 'list'}" @click="setDisplayMode('list')">☰</div>
-          </div>
+        <div class="filter-bar">
+          <div class="filter-btn" :class="{active: filterOwner==='all'}" @click="filterOwner='all'">全部</div>
+          <div class="filter-btn" :class="{active: filterOwner==='dad'}" @click="filterOwner='dad'">👨爸爸</div>
+          <div class="filter-btn" :class="{active: filterOwner==='mom'}" @click="filterOwner='mom'">👩妈妈</div>
+          <div class="filter-btn" :class="{active: filterOwner==='sister'}" @click="filterOwner='sister'">👧姐姐</div>
+          <div class="filter-btn" :class="{active: filterOwner==='brother'}" @click="filterOwner='brother'">👦弟弟</div>
         </div>
         <select v-model="filterSeason" class="season-select">
           <option value="all">🌤️ 所有季节</option>
@@ -209,17 +201,10 @@
 
     <!-- ================= 收纳库 ================= -->
     <div v-if="view === 'storage'">
-      <div class="filter-row" style="margin-bottom: 16px;">
-        <div class="card" style="background: #eaf6ec; border: 1px solid #cce5d2; margin-bottom: 0; flex: 1; margin-right: 10px; padding: 14px;">
-          <p style="font-size: 13px; color: #2b703b; line-height: 1.4;">
-            💡 把收纳袋/箱当成“容器”，拍一张照。录入衣服时直接选箱子，一目了然！
-          </p>
-        </div>
-        <!-- 视图切换 -->
-        <div class="view-toggle">
-          <div :class="{active: displayMode === 'grid'}" @click="setDisplayMode('grid')">🔳</div>
-          <div :class="{active: displayMode === 'list'}" @click="setDisplayMode('list')">☰</div>
-        </div>
+      <div class="card" style="background: #eaf6ec; border: 1px solid #cce5d2; margin-bottom: 16px; padding: 14px;">
+        <p style="font-size: 13px; color: #2b703b; line-height: 1.5;">
+          💡 把收纳袋/箱子当成“容器”，拍一张照。录入衣服时直接选箱子，一目了然！
+        </p>
       </div>
 
       <!-- 网格模式 -->
@@ -282,28 +267,48 @@
         </select>
       </div>
 
-      <div class="card">
-        <div v-for="item in filteredSupplies" :key="item.id" class="list-row">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <img :src="item.image_url || 'https://via.placeholder.com/100?text=Item'" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;" />
-            <div>
-              <div style="font-weight: 600; font-size: 15px;">
-                {{ item.name }}
-                <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
-              </div>
-              <div style="font-size: 12px; color: #999; margin-top: 4px;">
-                📍 {{ getLocationName(item.location_id) || item.location || '未指定位置' }}
-              </div>
+      <!-- 网格模式 -->
+      <div v-if="displayMode === 'grid'" class="grid-2">
+        <div class="item-card-grid" v-for="item in filteredSupplies" :key="item.id" @click="openEditSupply(item)">
+          <img :src="item.image_url || 'https://via.placeholder.com/200?text=Item'" class="item-img-grid" />
+          <div class="item-info-grid">
+            <div class="item-name">{{ item.name }}</div>
+            <div class="item-meta">
+              <span class="tag orange">{{ item.category }}</span>
+              <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
+            </div>
+            <div class="item-meta" style="color: #e6703b; font-weight: 600; margin-top: 4px;">
+              📦 库存: {{ item.quantity }} {{ item.unit }}
+            </div>
+            <div class="item-meta" style="font-size: 11px; color: #999;">
+              📍 {{ getLocationName(item.location_id) || item.location || '未指定位置' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表模式 -->
+      <div v-if="displayMode === 'list'" class="list-1">
+        <div class="item-card-list" v-for="item in filteredSupplies" :key="item.id">
+          <div class="item-info-list">
+            <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
+            <div class="item-meta">
+              <span class="tag orange">{{ item.category }}</span>
+              <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
+            </div>
+            <div class="item-meta" style="font-size: 12px; color: #999; margin-top: 4px;">
+              📍 {{ getLocationName(item.location_id) || item.location || '未指定位置' }}
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click="adjustSupply(item, -1)">-</button>
+            <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click.stop="adjustSupply(item, -1)">-</button>
             <div style="text-align: center; width: 40px; font-weight: bold;">{{ item.quantity }}</div>
-            <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click="adjustSupply(item, 1)">+</button>
+            <button class="btn small secondary" style="padding: 6px; width: 32px; height: 32px;" @click.stop="adjustSupply(item, 1)">+</button>
           </div>
         </div>
-        <div v-if="filteredSupplies.length === 0" class="empty-text">暂无物品</div>
       </div>
+
+      <div v-if="filteredSupplies.length === 0" class="empty-text">暂无物品</div>
 
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddSupply">+</button>
     </div>
@@ -325,6 +330,17 @@
 
     <!-- ================= 设置 ================= -->
     <div v-if="view === 'setting'">
+      
+      <!-- 💡 新增：全局视图切换 -->
+      <div class="card">
+        <h2>🖼️ 浏览模式偏好</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 8px;">选择你喜欢的列表展示方式，全站生效。</p>
+        <div class="view-toggle">
+          <div :class="{active: displayMode === 'grid'}" @click="setDisplayMode('grid')">🔳 大图模式</div>
+          <div :class="{active: displayMode === 'list'}" @click="setDisplayMode('list')">☰ 小图列表</div>
+        </div>
+      </div>
+
       <div class="card">
         <h2>☁️ 云端同步状态</h2>
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; margin-top: 8px;">
@@ -415,7 +431,7 @@
             <div style="font-size: 12px; color: #666;" v-else>数量: {{ item.quantity }} {{ item.unit }}</div>
           </div>
         </div>
-        <button class="btn small secondary" @click="locItemsModal.show=false; item.type === 'wardrobe' ? openEditWardrobe(item) : null">查看</button>
+        <button class="btn small secondary" @click="locItemsModal.show=false; item.type === 'wardrobe' ? openEditWardrobe(item) : openEditSupply(item)">查看</button>
       </div>
       
       <button class="btn secondary" style="width: 100%; margin-top: 16px;" @click="locItemsModal.show=false">关闭</button>
@@ -507,10 +523,10 @@
     </div>
   </div>
 
-  <!-- ================= 弹窗：添加日用品 ================= -->
+  <!-- ================= 💡 修改后的：添加/编辑日用品 ================= -->
   <div class="modal-mask" v-if="supplyModal.show" @click.self="supplyModal.show=false">
     <div class="modal-box">
-      <h3 style="margin-bottom: 16px;">添加日用品</h3>
+      <h3 style="margin-bottom: 16px;">{{ supplyModal.isEdit ? '编辑日用品' : '添加日用品' }}</h3>
       
       <label>物品照片</label>
       <div class="upload-box" style="flex-direction: row; gap: 10px;">
@@ -525,10 +541,13 @@
         </template>
       </div>
 
+      <!-- 第一行：名称 -->
       <div class="input-wrap">
         <label>物品名称 <span style="color:red">*</span></label>
         <input v-model="supplyModal.form.name" placeholder="如：抽纸 / 冬被" />
       </div>
+
+      <!-- 第二行：分类 + 季节 -->
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
           <label>分类</label>
@@ -553,38 +572,48 @@
           </select>
         </div>
       </div>
-      
+
+      <!-- 第三行：存放位置（独占一行，突出显示） -->
+      <div class="input-wrap" style="background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
+        <label style="color: #d14a4a; font-weight: 600;">📍 存放在哪？</label>
+        <select v-model="supplyModal.form.location_id" style="border-color: #fce8e8;">
+          <option :value="null">-- 请选择收纳位置 --</option>
+          <option v-for="loc in locationsData" :key="loc.id" :value="loc.id">
+            {{ loc.code }} - {{ loc.name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- 第四行：数量 + 单位 -->
       <div style="display: flex; gap: 10px;">
-        <div class="input-wrap" style="flex: 1; background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
-          <label style="color: #d14a4a; font-weight: 600;">📍 存放在哪？</label>
-          <select v-model="supplyModal.form.location_id" style="border-color: #fce8e8;">
-            <option :value="null">-- 选择收纳容器 --</option>
-            <option v-for="loc in locationsData" :key="loc.id" :value="loc.id">
-              {{ loc.code }} - {{ loc.name }}
-            </option>
-          </select>
-        </div>
         <div class="input-wrap" style="flex: 1;">
           <label>当前数量</label>
           <input type="number" v-model="supplyModal.form.quantity" placeholder="如：2" />
         </div>
-      </div>
-      <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
           <label>单位</label>
           <input v-model="supplyModal.form.unit" placeholder="如：包 / 床" />
         </div>
+      </div>
+
+      <!-- 第五行：低库存 + 保质期 -->
+      <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1;">
           <label>低库存提醒 (≤)</label>
           <input type="number" v-model="supplyModal.form.low_stock" placeholder="如：1" />
         </div>
-      </div>
-      <div class="input-wrap">
-        <label>保质期至 (被子可不填)</label>
-        <input type="date" v-model="supplyModal.form.expire_date" />
+        <div class="input-wrap" style="flex: 1;">
+          <label>保质期至</label>
+          <input type="date" v-model="supplyModal.form.expire_date" />
+        </div>
       </div>
 
-      <button class="btn" style="width: 100%; margin-top: 10px;" @click="saveSupply" :disabled="isUploading">保存</button>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button v-if="supplyModal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; flex: 1;" @click="deleteSupply">删除</button>
+        <button class="btn" style="flex: 2;" @click="saveSupply" :disabled="isUploading">
+          {{ isUploading ? '保存中...' : '保存' }}
+        </button>
+      </div>
     </div>
   </div>
 
@@ -623,7 +652,7 @@ createApp({
       view: 'home',
       isUploading: false,
       
-      // 💡 新增：视图模式，默认读取本地设置，如果没有则是网格模式
+      // 视图模式（全局），默认大图
       displayMode: localStorage.getItem('displayMode') || 'grid',
       
       showConfigModal: false,
@@ -656,8 +685,8 @@ createApp({
         form: { id: null, owner: 'dad', season: '四季', name: '', category: '上衣', size: '', location_id: null, image_url: '' }
       },
       supplyModal: {
-        show: false,
-        form: { name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
+        show: false, isEdit: false,
+        form: { id: null, name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
       }
     };
   },
@@ -698,10 +727,9 @@ createApp({
   },
   
   methods: {
-    // 💡 切换视图模式
     setDisplayMode(mode) {
       this.displayMode = mode;
-      localStorage.setItem('displayMode', mode); // 记住偏好
+      localStorage.setItem('displayMode', mode);
     },
 
     initSupabase() {
@@ -749,7 +777,6 @@ createApp({
 
       this.isUploading = true;
       try {
-        // 极致压缩：50KB以内，最大宽高600px，兼容 iOS Safari
         const options = { maxSizeMB: 0.05, maxWidthOrHeight: 600, useWebWorker: false };
         const compressedFile = await imageCompression(file, options);
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
@@ -775,7 +802,7 @@ createApp({
       this.locModal = { show: true, isEdit: false, form: { id: null, code: '', name: '', description: '', image_url: '' } };
     },
     openEditLocation(loc) {
-      this.locItemsModal.show = false; // 关掉查看页
+      this.locItemsModal.show = false;
       this.locModal = { show: true, isEdit: true, form: { ...loc } };
     },
     openLocationItems(loc) {
@@ -868,9 +895,25 @@ createApp({
     // --- 日用品逻辑 ---
     openAddSupply() {
       this.supplyModal = {
-        show: true,
-        form: { name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
+        show: true, isEdit: false,
+        form: { id: null, name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
       };
+    },
+    openEditSupply(item) {
+      // 如果是从收纳箱里点开的，可能带有额外的 type 属性，我们只取需要的数据
+      const formData = {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        season: item.season,
+        quantity: item.quantity,
+        unit: item.unit,
+        expire_date: item.expire_date || '',
+        low_stock: item.low_stock,
+        location_id: item.location_id,
+        image_url: item.image_url
+      };
+      this.supplyModal = { show: true, isEdit: true, form: formData };
     },
     async saveSupply() {
       const f = this.supplyModal.form;
@@ -883,11 +926,28 @@ createApp({
         location_id: f.location_id, image_url: f.image_url 
       };
       try {
-        await this.supabase.from('supplies').insert([payload]);
+        if (this.supplyModal.isEdit) {
+          await this.supabase.from('supplies').update(payload).eq('id', f.id);
+        } else {
+          await this.supabase.from('supplies').insert([payload]);
+        }
         this.supplyModal.show = false;
         await this.fetchData();
       } catch (err) {
         alert("保存失败：" + err.message);
+      } finally {
+        this.isUploading = false;
+      }
+    },
+    async deleteSupply() {
+      if (!confirm("确定删除这个物品吗？")) return;
+      this.isUploading = true;
+      try {
+        await this.supabase.from('supplies').delete().eq('id', this.supplyModal.form.id);
+        this.supplyModal.show = false;
+        await this.fetchData();
+      } catch(err) {
+        alert("删除失败：" + err.message);
       } finally {
         this.isUploading = false;
       }
