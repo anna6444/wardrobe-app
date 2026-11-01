@@ -1141,16 +1141,18 @@ createApp({
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
+        // 💡 画布大瘦身：宽度 800，高度 1400 (图片各 600，底部 200)
         const canvasW = 800;
-        const imgH = 400; // 每张图固定 400 高
-        const canvasH = 1000; // 总高 1000 (400 + 400 + 200)
+        const imgH = 600;
+        const canvasH = 1400;
         canvas.width = canvasW;
         canvas.height = canvasH;
         
+        // 背景
         ctx.fillStyle = '#f9f6ef';
         ctx.fillRect(0, 0, canvasW, canvasH);
         
-        // 💡 画图辅助函数，保证图片居中裁剪铺满指定区域，绝不越界遮挡
+        // 绘制图片的辅助函数，保证图片铺满指定区域
         const drawImageCover = (image, x, y, w, h) => {
           const imgRatio = image.width / image.height;
           const boxRatio = w / h;
@@ -1169,17 +1171,17 @@ createApp({
           ctx.drawImage(image, sx, sy, sWidth, sHeight, x, y, w, h);
         };
 
-        // 1. 上半部分画物品图 (0, 0, 800, 400)
+        // 1. 上半部分画物品图 (0, 0, 800, 600)
         drawImageCover(mainImg, 0, 0, canvasW, imgH);
         
-        // 2. 下半部分画收纳箱图 (0, 400, 800, 400)
+        // 2. 下半部分画收纳箱图 (0, 600, 800, 600)
         if (locImg) {
           drawImageCover(locImg, 0, imgH, canvasW, imgH);
         }
         
-        // 3. 底部画文字区 (0, 800, 800, 200)
+        // 3. 底部画文字区 (0, 1200, 800, 200)
         const cardH = 200;
-        const cardY = 800;
+        const cardY = 1200;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, cardY, canvasW, cardH);
         
@@ -1225,7 +1227,7 @@ createApp({
       }
     },
 
-    // 💡 一键保存图片
+    // 一键保存图片
     savePoster() {
       if (!this.posterFile) return;
       const url = URL.createObjectURL(this.posterFile);
@@ -1243,7 +1245,7 @@ createApp({
       }
     },
 
-    // 💡 一键分享
+    // 一键分享
     async sharePosterToWX() {
       if (!this.posterFile) return;
       
