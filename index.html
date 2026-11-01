@@ -10,6 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
   <style>
+    /* 基础样式修复 */
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
     html, body { width: 100%; overflow-x: hidden; }
     body { background-color: #f9f6ef; color: #333; padding-bottom: 100px; font-size: 15px; user-select: none; padding-top: env(safe-area-inset-top); }
@@ -30,7 +31,7 @@
     h2 { font-size: 18px; margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; justify-content: space-between;}
     .home-card h2 { font-size: 16px; margin-bottom: 10px; }
     
-    .btn { background: #e6703b; color: #fff; border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s; }
+    .btn { background: #e6703b; color: #fff; border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s; display: inline-block; text-align: center;}
     .btn:active { opacity: 0.8; transform: scale(0.98); }
     .btn.secondary { background: #f1ede4; color: #555; }
     .btn.small { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
@@ -52,15 +53,14 @@
     .filter-btn.active { background: #e6703b; color: white; border-color: #e6703b; font-weight: 600; }
     .season-select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #e8e2d6; font-size: 14px; background: #fff; color: #555; margin-top: 10px;}
     
-    /* 视图切换按钮（设置页） */
+    /* 视图切换按钮 */
     .view-toggle { display: flex; background: #e8e2d6; border-radius: 12px; padding: 4px; margin-top: 10px; }
     .view-toggle div { flex: 1; text-align: center; padding: 10px; border-radius: 8px; font-size: 15px; cursor: pointer; color: #666; transition: all 0.2s;}
     .view-toggle div.active { background: #fff; color: #e6703b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: bold;}
 
     /* 列表与卡片：网格模式 */
-    .grid-2 { display: grid; grid-template-columns;: 1fr 1fr; gap:  }
-14px; }
-       .item-card-grid { . background: #fff; border-radiussw: 16px;ipe overflow: hidden; border: 1px solid #eee; position: relative; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .item-card-grid { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #eee; position: relative; }
     .item-img-grid { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f9f9f9; display: block; cursor: pointer;}
     .item-info-grid { padding: 12px; }
 
@@ -70,7 +70,8 @@
     /* 左滑删除包装器 */
     .swipe-wrapper { position: relative; overflow: hidden; border-radius: 16px; background: #d14a4a; touch-action: pan-y; }
     .swipe-content { transition: transform 0.3s ease; background: #fff; position: relative; z-index: 2; will-change: transform; }
-    .swipe-content.no-transition { transition: none-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #d14a4a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; z-index: 1; cursor: pointer; }
+    .swipe-content.no-transition { transition: none; }
+    .swipe-delete-btn { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #d14a4a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; z-index: 1; cursor: pointer; }
     
     .item-card-list { border-radius: 16px; border: 1px solid #eee; display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; overflow: hidden; background: #fff;}
     .item-info-list { flex: 1; min-width: 0; padding-right: 16px;}
@@ -114,7 +115,7 @@
     .recent-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 60px; margin: 0 auto; }
     .recent-type { font-size: 9px; color: #999; }
 
-    /* 💡 图片全屏预览 */
+    /* 图片全屏预览 */
     .img-preview-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; }
     .img-preview-mask img { max-width: 95vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
 
@@ -448,7 +449,6 @@
           <div class="filter-btn" :class="{active: filterSupply==='洗护'}" @click="filterSupply='洗护'">洗护</div>
           <div class="filter-btn" :class="{active: filterSupply==='药品'}" @click="filterSupply='药品'">药品</div>
           <div class="filter-btn" :class="{active: filterSupply==='被子/床品'}" @click="filterSupply='被子/床品'">被子/床品</div>
-          <div class="filter-btn" :class="{active: filterSupply==='零食'}" @click="filterSupply='零食'">零食</div>
           <div class="filter-btn" :class="{active: filterSupply==='五金'}" @click="filterSupply='五金'">五金</div>
         </div>
         <select v-model="filterSupplySeason" class="season-select">
@@ -732,7 +732,6 @@
             <option value="洗护">洗护</option>
             <option value="药品">药品</option>
             <option value="被子/床品">被子/床品</option>
-            <option value="零食">零食</option>
             <option value="五金">五金</option>
             <option value="其他">其他</option>
           </select>
@@ -826,7 +825,7 @@ createApp({
       view: 'home',
       isUploading: false,
       displayMode: localStorage.getItem('displayMode') || 'grid',
-      previewImage: '', // 放大图片的URL
+      previewImage: '',
       
       showConfigModal: false,
       showKey: false,
@@ -1042,7 +1041,6 @@ createApp({
       }
     },
 
-    // 左滑逻辑相关方法
     onTouchStart(e, id) {
       if (this.storageDetailBatchMode && this.view === 'storage_detail') return;
       if (this.openSwipeId && this.openSwipeId !== id) {
@@ -1137,7 +1135,6 @@ createApp({
       }
     },
 
-    // 采购清单一键入库
     async importCheckedToStock() {
       const checkedItems = this.todoList.filter(i => i.done);
       if (checkedItems.length === 0) return;
@@ -1146,16 +1143,13 @@ createApp({
       
       this.isUploading = true;
       try {
-        // 循环更新数据库中的库存数量
         for (let item of checkedItems) {
-          // 由于我们在清单生成时丢失了原来的数量，需要先查一下最新库存再更新
           const dbItem = this.suppliesData.find(s => s.id === item.id);
           if (dbItem) {
             const newQty = Number(dbItem.quantity) + 1; 
             await this.supabase.from('supplies').update({ quantity: newQty }).eq('id', item.id);
           }
         }
-        
         await this.fetchData();
         alert("✅ 入库成功！库存已增加。");
       } catch (err) {
@@ -1165,7 +1159,6 @@ createApp({
       }
     },
 
-    // 复制收纳清单
     copyStorageList() {
       const items = this.getStorageItems();
       if (items.length === 0) {
@@ -1182,7 +1175,6 @@ createApp({
         }
       });
       
-      // 复制到剪贴板
       const textArea = document.createElement("textarea");
       textArea.value = text;
       document.body.appendChild(textArea);
@@ -1196,7 +1188,6 @@ createApp({
       document.body.removeChild(textArea);
     },
 
-    // --- 收纳容器逻辑 ---
     openAddLocation() {
       this.locModal = { show: true, isEdit: false, form: { id: null, code: '', name: '', description: '', image_url: '' } };
     },
@@ -1328,7 +1319,6 @@ createApp({
       }
     },
 
-    // --- 衣物逻辑 ---
     openAddWardrobe() {
       this.modal = {
         show: true, isEdit: false,
@@ -1376,7 +1366,6 @@ createApp({
       }
     },
 
-    // --- 日用品逻辑 ---
     openAddSupply() {
       this.supplyModal = {
         show: true, isEdit: false,
@@ -1442,7 +1431,6 @@ createApp({
       await this.supabase.from('supplies').update({ quantity: newQty }).eq('id', item.id);
     },
 
-    // --- 通用方法 ---
     getLocationName(locId) {
       const loc = this.locationsData.find(l => l.id === locId);
       return loc ? `${loc.code} - ${loc.name}` : '';
