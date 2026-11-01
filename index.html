@@ -89,9 +89,26 @@
     
     .input-wrap { margin-bottom: 14px; min-width: 0; }
     label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
-    input, select, textarea { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s; min-width: 0; }
+    
+    /* 💡 统一输入框高度，修复日期框丑的问题 */
+    input, select, textarea { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s; min-width: 0; min-height: 46px;}
     input:focus, select:focus, textarea:focus { border-color: #e6703b; background: #fff; }
-    input[type="date"] { appearance: none; -webkit-appearance: none; display: block; width: 100%; }
+    
+    /* 针对日期框的特殊优化 */
+    input[type="date"] { 
+      appearance: none; 
+      -webkit-appearance: none; 
+      display: flex; 
+      align-items: center; 
+      position: relative;
+      background: #faf9f7 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>') no-repeat right 12px center;
+      background-size: 18px;
+    }
+    /* 修复 iOS 日期文字不居中 */
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: left;
+      line-height: 20px;
+    }
     
     /* 上传UI */
     .upload-box { border: 2px dashed #ddd; border-radius: 12px; padding: 10px; text-align: center; position: relative; overflow: hidden; margin-bottom: 14px; min-height: 80px; display: flex; align-items: center; justify-content: center; flex-direction: column;}
@@ -132,7 +149,7 @@
 
     /* 采购清单入库操作区 */
     .todo-action-bar { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
-    .qty-input { width: 60px; text-align: center; padding: 6px; border-radius: 8px; border: 1px solid #ddd; font-weight: bold; }
+    .qty-input { width: 60px; text-align: center; padding: 6px; border-radius: 8px; border: 1px solid #ddd; font-weight: bold; min-height: 32px;}
     .btn-stock-in { background: #2b703b; padding: 6px 12px; font-size: 13px; border-radius: 8px; }
     
     /* 收纳库底部浮动操作栏 */
@@ -1106,7 +1123,7 @@ createApp({
           const img = new Image();
           img.crossOrigin = "anonymous";
           img.onload = () => resolve(img);
-          img.onerror = () => resolve(null); // 即使加载失败也继续，不中断
+          img.onerror = () => resolve(null); 
           img.src = src;
         });
       };
@@ -1127,11 +1144,9 @@ createApp({
         canvas.width = canvasW;
         canvas.height = canvasH;
         
-        // 背景
         ctx.fillStyle = '#f9f6ef';
         ctx.fillRect(0, 0, canvasW, canvasH);
         
-        // 绘制物品大图区域
         const imgSize = 720;
         const imgX = 40;
         const imgY = 40;
@@ -1139,42 +1154,35 @@ createApp({
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(imgX, imgY, imgSize, imgSize);
         
-        // 绘制主图（居中裁剪）
         const scale = Math.max(imgSize / mainImg.width, imgSize / mainImg.height);
         const drawW = mainImg.width * scale;
         const drawH = mainImg.height * scale;
         ctx.drawImage(mainImg, imgX + (imgSize - drawW)/2, imgY + (imgSize - drawH)/2, drawW, drawH);
         
-        // 绘制底部白色卡片区
         const cardY = imgY + imgSize + 20;
         const cardH = 220;
         ctx.fillStyle = '#ffffff';
         
-        // 兼容性处理：使用普通矩形代替 roundRect，防止白屏
-        ctx.fillRect(40, cardY, 720, cardH); 
+        // 安全绘制圆角矩形，防止旧版 iOS 崩溃
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(40, cardY, 720, cardH, 20);
+          ctx.fill();
+        } else {
+          ctx.fillRect(40, cardY, 720, cardH); 
+        }
         
         let textStartX = 70;
 
-        // 如果有收纳箱图片，画在左下角
         if (locImg) {
           const locImgSize = 100;
           const locImgX = 60;
           const locImgY = cardY + 60;
           
           ctx.save();
-          // 兼容性裁剪（使用圆角矩形路径）
           ctx.beginPath();
-          const radius = 12;
-          ctx.moveTo(locImgX + radius, locImgY);
-          ctx.lineTo(locImgX + locImgSize - radius, locImgY);
-          ctx.quadraticCurveTo(locImgX + locImgSize, locImgY, locImgX + locImgSize, locImgY + radius);
-          ctx.lineTo(locImgX + locImgSize, locImgY + locImgSize - radius);
-          ctx.quadraticCurveTo(locImgX + locImgSize, locImgY + locImgSize, locImgX + locImgSize - radius, locImgY + locImgSize);
-          ctx.lineTo(locImgX + radius, locImgY + locImgSize);
-          ctx.quadraticCurveTo(locImgX, locImgY + locImgSize, locImgX, locImgY + locImgSize - radius);
-          ctx.lineTo(locImgX, locImgY + radius);
-          ctx.quadraticCurveTo(locImgX, locImgY, locImgX + radius, locImgY);
-          ctx.closePath();
+          // 简单矩形裁剪防崩溃
+          ctx.rect(locImgX, locImgY, locImgSize, locImgSize);
           ctx.clip();
           
           const locScale = Math.max(locImgSize / locImg.width, locImgSize / locImg.height);
@@ -1183,7 +1191,6 @@ createApp({
           ctx.drawImage(locImg, locImgX + (locImgSize - locDrawW)/2, locImgY + (locImgSize - locDrawH)/2, locDrawW, locDrawH);
           ctx.restore();
           
-          // 给收纳箱图加个边框
           ctx.strokeStyle = '#e8e2d6';
           ctx.lineWidth = 2;
           ctx.beginPath();
@@ -1193,25 +1200,21 @@ createApp({
           textStartX = 180; 
         }
         
-        // 绘制文字信息
         ctx.fillStyle = '#333333';
         ctx.font = 'bold 40px sans-serif';
         ctx.fillText(item.name, textStartX, cardY + 70);
         
-        // 标签信息
         ctx.fillStyle = '#e6703b';
         ctx.font = '28px sans-serif';
         let tagText = item.type === 'wardrobe' ? `尺码: ${item.size || '无'}` : `数量: ${item.quantity}${item.unit}`;
         if (item.category) tagText += ` | 分类: ${item.category}`;
         ctx.fillText(tagText, textStartX, cardY + 125);
         
-        // 位置信息
         ctx.fillStyle = '#666666';
         ctx.font = '26px sans-serif';
         const locName = this.getLocationName(item.location_id) || item.location || '未指定位置';
         ctx.fillText(`📍 存放于: ${locName}`, textStartX, cardY + 180);
         
-        // 底部水印
         ctx.fillStyle = '#cccccc';
         ctx.font = '20px sans-serif';
         ctx.textAlign = 'center';
@@ -1221,7 +1224,7 @@ createApp({
         
       } catch (e) {
         console.error("Canvas Error:", e);
-        alert("生成分享图失败：可能是因为图片跨域安全限制。您可以直接截图当前页面发送给家人。");
+        alert("生成分享图失败，您可以直接截图发送给家人。");
       } finally {
         this.isUploading = false;
       }
