@@ -94,7 +94,7 @@
     input, select, textarea { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s; min-width: 0; min-height: 46px;}
     input:focus, select:focus, textarea:focus { border-color: #e6703b; background: #fff; }
     
-    /* 日期框 */
+    /* 针对日期框的特殊优化 */
     input[type="date"] { 
       appearance: none; -webkit-appearance: none; display: flex; align-items: center; position: relative;
       background: #faf9f7 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>') no-repeat right 12px center;
@@ -366,7 +366,7 @@
           <div class="item-info-grid">
             <div class="item-name" style="color: #e6703b;">{{ loc.code }}</div>
             <div class="item-meta">{{ loc.name }}</div>
-            <!-- 💡 新增：内涵标签 -->
+            <!-- 💡 内涵标签 -->
             <div class="item-meta" style="font-size: 11px; color: #888; margin-top: 4px;">
               <span v-if="getLocItemsSummary(loc.id).w > 0">👕{{ getLocItemsSummary(loc.id).w }} </span>
               <span v-if="getLocItemsSummary(loc.id).s > 0">🧻{{ getLocItemsSummary(loc.id).s }}</span>
@@ -1127,7 +1127,6 @@ createApp({
       }
     },
 
-    // 💡 极简操作：关闭所有弹窗
     closeAllModals() {
       this.previewImage = '';
       this.posterUrl = '';
@@ -1169,7 +1168,6 @@ createApp({
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // 💡 画布大小：宽度 800，高度 1400 (图片各 600，底部 200)
         const canvasW = 800;
         const imgH = 600;
         const canvasH = 1400;
@@ -1197,15 +1195,12 @@ createApp({
           ctx.drawImage(image, sx, sy, sWidth, sHeight, x, y, w, h);
         };
 
-        // 1. 上半部分
         drawImageCover(mainImg, 0, 0, canvasW, imgH);
         
-        // 2. 下半部分
         if (locImg) {
           drawImageCover(locImg, 0, imgH, canvasW, imgH);
         }
         
-        // 3. 文字区
         const cardH = 200;
         const cardY = 1200;
         ctx.fillStyle = '#ffffff';
@@ -1493,7 +1488,6 @@ createApp({
       return [...wItems, ...sItems];
     },
 
-    // 💡 新增：获取箱子内的分类统计
     getLocItemsSummary(locId) {
       const w = this.wardrobeData.filter(item => item.location_id === locId).length;
       const s = this.suppliesData.filter(item => item.location_id === locId).length;
@@ -1633,6 +1627,13 @@ createApp({
       if (!confirm("确定删除这件衣物吗？")) return;
       this.isUploading = true;
       try {
+        // 💡 同步删除图片
+        if (this.modal.form.image_url) {
+          const urlParts = this.modal.form.image_url.split('/');
+          const fileName = urlParts[urlParts.length - 1];
+          await this.supabase.storage.from('wardrobe').remove([fileName]);
+        }
+
         await this.supabase.from('wardrobe').delete().eq('id', this.modal.form.id);
         this.modal.show = false;
         await this.fetchData();
@@ -1692,6 +1693,13 @@ createApp({
       if (!confirm("确定删除这个物品吗？")) return;
       this.isUploading = true;
       try {
+        // 💡 同步删除图片
+        if (this.supplyModal.form.image_url) {
+          const urlParts = this.supplyModal.form.image_url.split('/');
+          const fileName = urlParts[urlParts.length - 1];
+          await this.supabase.storage.from('wardrobe').remove([fileName]);
+        }
+
         await this.supabase.from('supplies').delete().eq('id', this.supplyModal.form.id);
         this.supplyModal.show = false;
         await this.fetchData();
