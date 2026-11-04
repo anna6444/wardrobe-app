@@ -64,6 +64,11 @@
     .view-toggle div { flex: 1; text-align: center; padding: 10px; border-radius: 8px; font-size: 15px; cursor: pointer; color: #666; transition: all 0.2s;}
     .view-toggle div.active { background: #fff; color: #e6703b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: bold;}
 
+    /* 💡 新增：折叠面板样式 */
+    .accordion-group { margin-bottom: 20px; background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #eee; }
+    .accordion-header { background: #fdfaf6; padding: 16px; font-weight: 600; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #eee; }
+    .accordion-content { padding: 16px; background: #fff; }
+
     /* 列表与卡片：网格模式 */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .item-card-grid { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #eee; position: relative; }
@@ -254,7 +259,6 @@
       <div class="card home-card">
         <h2>📊 仓库概况</h2>
         <div style="display: flex; justify-content: space-between; margin-top: 8px;">
-          <!-- 💡 增加点击穿透 -->
           <div style="text-align: center; flex: 1; border-right: 1px solid #eee; cursor: pointer;" @click="switchView('wardrobe')">
             <div style="font-size: 20px; font-weight: bold; color: #e6703b;">{{ wardrobeData.length }}</div>
             <div style="font-size: 12px; color: #666;">衣物</div>
@@ -306,54 +310,83 @@
         </div>
       </div>
 
-      <!-- 网格模式 -->
-      <div v-if="displayMode === 'grid'" class="grid-2">
-        <div class="item-card-grid" v-for="item in filteredWardrobe" :key="item.id" @click="openEditWardrobe(item)">
-          <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" @click.stop="showPreview(item, 'wardrobe')" />
-          <div class="item-info-grid">
-            <div class="item-name">{{ item.name }}</div>
-            <div class="item-meta">
-              <span class="tag blue">{{ item.size }}</span> 
-              <span v-if="item.season" class="tag green">{{ item.season }}</span>
-              <span v-if="item.fit_status && item.fit_status !== '合身'" class="tag" :class="item.fit_status === '偏小' ? 'red' : 'orange'">{{ item.fit_status }}</span>
+      <!-- 💡 折叠分组展示区 -->
+      <div v-if="filteredWardrobe.length === 0" class="empty-text">没有找到相关衣物</div>
+      
+      <div v-else class="accordion-container">
+        <!-- 分组模式选择 -->
+        <div style="display:flex; justify-content:flex-end; margin-bottom: 10px;">
+          <select v-model="groupBy" class="season-select" style="width:auto; padding: 6px 12px; min-height: 36px;">
+            <option value="owner">👤 按所属人折叠</option>
+            <option value="category">👕 按品类折叠</option>
+            <option value="season">❄️ 按季节折叠</option>
+          </select>
+        </div>
+
+        <div v-for="(group, key) in groupedWardrobe" :key="key" class="accordion-group">
+          <!-- 折叠头 -->
+          <div class="accordion-header" @click="toggleAccordion(key)">
+            <div>
+              <span v-if="groupBy === 'owner'">{{ getOwnerIcon(key) }} {{ getOwnerName(key) }}</span>
+              <span v-else>{{ key }}</span>
+              <span style="font-size: 13px; color: #e6703b; margin-left: 8px;">({{ group.length }}件)</span>
             </div>
-            <div class="item-meta" style="color: #e6703b; font-weight: 600; margin-top: 4px;">
-              📍 {{ getLocationName(item.location_id) }}
+            <div style="font-size: 18px; color: #999;">
+              {{ expandedGroups.includes(key) ? '▲' : '▼' }}
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- 列表模式 -->
-      <div v-if="displayMode === 'list'" class="list-1">
-        <div class="swipe-wrapper" v-for="item in filteredWardrobe" :key="item.id">
-          <div class="swipe-delete-btn" @click.stop="quickDeleteItem(item, 'wardrobe')">删除</div>
-          <div class="swipe-content" :class="{'no-transition': swipingId === item.id}"
-               :style="{ transform: `translateX(${swipeOffsets['w_'+item.id] || 0}px)` }"
-               @touchstart="onTouchStart($event, 'w_'+item.id)"
-               @touchmove="onTouchMove($event, 'w_'+item.id)"
-               @touchend="onTouchEnd('w_'+item.id)"
-               @click="handleSwipeClick(item, 'wardrobe', 'w_'+item.id)">
-            <div class="item-card-list" style="border: none; border-radius: 16px;">
-              <div class="item-info-list">
-                <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
-                <div class="item-meta">
-                  <span class="tag blue">{{ item.size }}</span> 
-                  <span v-if="item.season" class="tag green">{{ item.season }}</span>
-                  <span class="tag">{{ item.category }}</span>
-                  <span v-if="item.fit_status && item.fit_status !== '合身'" class="tag" :class="item.fit_status === '偏小' ? 'red' : 'orange'">{{ item.fit_status }}</span>
-                </div>
-                <div class="item-meta" style="color: #e6703b; font-weight: 600; margin-top: 6px;">
-                  📍 {{ getLocationName(item.location_id) }}
+          <!-- 折叠内容区 -->
+          <div class="accordion-content" v-if="expandedGroups.includes(key)">
+            <!-- 网格模式 -->
+            <div v-if="displayMode === 'grid'" class="grid-2">
+              <div class="item-card-grid" v-for="item in group" :key="item.id" @click="openEditWardrobe(item)">
+                <img :src="item.image_url || 'https://via.placeholder.com/200?text=No+Image'" class="item-img-grid" @click.stop="showPreview(item, 'wardrobe')" />
+                <div class="item-info-grid">
+                  <div class="item-name">{{ item.name }}</div>
+                  <div class="item-meta">
+                    <span class="tag blue">{{ item.size }}</span> 
+                    <span v-if="item.season" class="tag green">{{ item.season }}</span>
+                    <span v-if="item.fit_status && item.fit_status !== '合身'" class="tag" :class="item.fit_status === '偏小' ? 'red' : 'orange'">{{ item.fit_status }}</span>
+                  </div>
+                  <div class="item-meta" style="color: #e6703b; font-weight: 600; margin-top: 4px;">
+                    📍 {{ getLocationName(item.location_id) }}
+                  </div>
                 </div>
               </div>
-              <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" @click.stop="showPreview(item, 'wardrobe')" />
+            </div>
+
+            <!-- 列表模式 -->
+            <div v-if="displayMode === 'list'" class="list-1">
+              <div class="swipe-wrapper" v-for="item in group" :key="item.id">
+                <div class="swipe-delete-btn" @click.stop="quickDeleteItem(item, 'wardrobe')">删除</div>
+                <div class="swipe-content" :class="{'no-transition': swipingId === item.id}"
+                     :style="{ transform: `translateX(${swipeOffsets['w_'+item.id] || 0}px)` }"
+                     @touchstart="onTouchStart($event, 'w_'+item.id)"
+                     @touchmove="onTouchMove($event, 'w_'+item.id)"
+                     @touchend="onTouchEnd('w_'+item.id)"
+                     @click="handleSwipeClick(item, 'wardrobe', 'w_'+item.id)">
+                  <div class="item-card-list" style="border: none; border-radius: 16px;">
+                    <div class="item-info-list">
+                      <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
+                      <div class="item-meta">
+                        <span class="tag blue">{{ item.size }}</span> 
+                        <span v-if="item.season" class="tag green">{{ item.season }}</span>
+                        <span class="tag">{{ item.category }}</span>
+                        <span v-if="item.fit_status && item.fit_status !== '合身'" class="tag" :class="item.fit_status === '偏小' ? 'red' : 'orange'">{{ item.fit_status }}</span>
+                      </div>
+                      <div class="item-meta" style="color: #e6703b; font-weight: 600; margin-top: 6px;">
+                        📍 {{ getLocationName(item.location_id) }}
+                      </div>
+                    </div>
+                    <img :src="item.image_url || 'https://via.placeholder.com/100?text=No+Image'" class="item-img-list" @click.stop="showPreview(item, 'wardrobe')" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <div v-if="filteredWardrobe.length === 0" class="empty-text">没有找到相关衣物</div>
       
       <button class="btn" style="position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(230,112,59,0.4); z-index: 90;" @click="openAddWardrobe">+</button>
     </div>
@@ -958,6 +991,10 @@ createApp({
       isUploading: false,
       displayMode: localStorage.getItem('displayMode') || 'grid',
       
+      // 💡 新增：分组与折叠状态
+      groupBy: 'owner', // 默认按所属人折叠
+      expandedGroups: [], // 记录哪些组是展开的
+      
       previewImage: '',
       previewItemData: null,
       posterUrl: '',
@@ -1057,6 +1094,21 @@ createApp({
         return searchStr.includes(kw);
       });
     },
+
+    // 💡 核心分组逻辑
+    groupedWardrobe() {
+      const groups = {};
+      this.filteredWardrobe.forEach(item => {
+        let key = '';
+        if (this.groupBy === 'owner') key = item.owner || 'other';
+        else if (this.groupBy === 'category') key = item.category || '其他';
+        else if (this.groupBy === 'season') key = item.season || '四季';
+
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(item);
+      });
+      return groups;
+    },
     
     filteredSupplies() {
       const kw = this.searchSupply.trim().toLowerCase();
@@ -1089,6 +1141,18 @@ createApp({
     }
   },
   
+  watch: {
+    groupBy() {
+      this.expandedGroups = []; // 切换分组模式时清空展开状态
+    },
+    groupedWardrobe(newVal) {
+      // 默认展开第一个组
+      if (Object.keys(newVal).length > 0 && this.expandedGroups.length === 0) {
+        this.expandedGroups = [Object.keys(newVal)[0]];
+      }
+    }
+  },
+
   mounted() {
     if (this.sbConfig.url && this.sbConfig.key) {
       this.initSupabase();
@@ -1098,6 +1162,23 @@ createApp({
   },
   
   methods: {
+    // 💡 切换折叠状态
+    toggleAccordion(key) {
+      const idx = this.expandedGroups.indexOf(key);
+      if (idx > -1) this.expandedGroups.splice(idx, 1);
+      else this.expandedGroups.push(key);
+    },
+
+    getOwnerName(key) {
+      const map = { dad: '爸爸', mom: '妈妈', sister: '姐姐', brother: '弟弟', other: '其他' };
+      return map[key] || key;
+    },
+
+    getOwnerIcon(key) {
+      const map = { dad: '👨', mom: '👩', sister: '👧', brother: '👦', other: '🎒' };
+      return map[key] || '🎒';
+    },
+
     switchView(newView) {
       this.view = newView;
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1825,15 +1906,6 @@ createApp({
     }
   }
 }).mount('#app');
-
-// 💡 注册 PWA Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(reg => console.log('PWA 注册成功'))
-      .catch(err => console.log('PWA 注册失败', err));
-  });
-}
 </script>
 </body>
 </html>
