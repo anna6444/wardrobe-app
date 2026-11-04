@@ -64,10 +64,10 @@
     .view-toggle div { flex: 1; text-align: center; padding: 10px; border-radius: 8px; font-size: 15px; cursor: pointer; color: #666; transition: all 0.2s;}
     .view-toggle div.active { background: #fff; color: #e6703b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: bold;}
 
-    /* 💡 新增：折叠面板样式 */
-    .accordion-group { margin-bottom: 20px; background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #eee; }
-    .accordion-header { background: #fdfaf6; padding: 16px; font-weight: 600; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #eee; }
-    .accordion-content { padding: 16px; background: #fff; }
+    /* 💡 极简折叠面板样式 */
+    .accordion-group { margin-bottom: 12px; background: transparent; }
+    .accordion-header { padding: 16px 4px; font-weight: 600; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #e8e2d6; }
+    .accordion-content { padding: 16px 0; }
 
     /* 列表与卡片：网格模式 */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -102,7 +102,7 @@
     .input-wrap { margin-bottom: 14px; min-width: 0; }
     label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
     
-    /* 统一输入框高度，修复日期框丑的问题 */
+    /* 统一输入框高度 */
     input, select, textarea { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s; min-width: 0; min-height: 46px;}
     input:focus, select:focus, textarea:focus { border-color: #e6703b; background: #fff; }
     
@@ -310,29 +310,20 @@
         </div>
       </div>
 
-      <!-- 💡 折叠分组展示区 -->
+      <!-- 💡 极简折叠分组展示区 -->
       <div v-if="filteredWardrobe.length === 0" class="empty-text">没有找到相关衣物</div>
       
       <div v-else class="accordion-container">
-        <!-- 分组模式选择 -->
-        <div style="display:flex; justify-content:flex-end; margin-bottom: 10px;">
-          <select v-model="groupBy" class="season-select" style="width:auto; padding: 6px 12px; min-height: 36px;">
-            <option value="owner">👤 按所属人折叠</option>
-            <option value="category">👕 按品类折叠</option>
-            <option value="season">❄️ 按季节折叠</option>
-          </select>
-        </div>
-
         <div v-for="(group, key) in groupedWardrobe" :key="key" class="accordion-group">
           <!-- 折叠头 -->
           <div class="accordion-header" @click="toggleAccordion(key)">
-            <div>
-              <span v-if="groupBy === 'owner'">{{ getOwnerIcon(key) }} {{ getOwnerName(key) }}</span>
-              <span v-else>{{ key }}</span>
-              <span style="font-size: 13px; color: #e6703b; margin-left: 8px;">({{ group.length }}件)</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 18px;">👕</span>
+              <span>{{ key || '未分类' }}</span>
+              <span style="font-size: 13px; color: #e6703b; background: #fff1e6; padding: 2px 8px; border-radius: 10px;">{{ group.length }}件</span>
             </div>
-            <div style="font-size: 18px; color: #999;">
-              {{ expandedGroups.includes(key) ? '▲' : '▼' }}
+            <div style="font-size: 18px; color: #999; transition: transform 0.3s; transform: rotate({{ expandedGroups.includes(key) ? 180 : 0 }}deg);">
+              ▼
             </div>
           </div>
 
@@ -372,7 +363,6 @@
                       <div class="item-meta">
                         <span class="tag blue">{{ item.size }}</span> 
                         <span v-if="item.season" class="tag green">{{ item.season }}</span>
-                        <span class="tag">{{ item.category }}</span>
                         <span v-if="item.fit_status && item.fit_status !== '合身'" class="tag" :class="item.fit_status === '偏小' ? 'red' : 'orange'">{{ item.fit_status }}</span>
                       </div>
                       <div class="item-meta" style="color: #e6703b; font-weight: 600; margin-top: 6px;">
@@ -991,9 +981,9 @@ createApp({
       isUploading: false,
       displayMode: localStorage.getItem('displayMode') || 'grid',
       
-      // 💡 新增：分组与折叠状态
-      groupBy: 'owner', // 默认按所属人折叠
-      expandedGroups: [], // 记录哪些组是展开的
+      // 💡 默认按品类分组，去除切换逻辑
+      groupBy: 'category', 
+      expandedGroups: [], 
       
       previewImage: '',
       previewItemData: null,
@@ -1095,15 +1085,11 @@ createApp({
       });
     },
 
-    // 💡 核心分组逻辑
+    // 💡 强制按品类分组
     groupedWardrobe() {
       const groups = {};
       this.filteredWardrobe.forEach(item => {
-        let key = '';
-        if (this.groupBy === 'owner') key = item.owner || 'other';
-        else if (this.groupBy === 'category') key = item.category || '其他';
-        else if (this.groupBy === 'season') key = item.season || '四季';
-
+        let key = item.category || '其他';
         if (!groups[key]) groups[key] = [];
         groups[key].push(item);
       });
@@ -1142,14 +1128,18 @@ createApp({
   },
   
   watch: {
-    groupBy() {
-      this.expandedGroups = []; // 切换分组模式时清空展开状态
-    },
-    groupedWardrobe(newVal) {
-      // 默认展开第一个组
-      if (Object.keys(newVal).length > 0 && this.expandedGroups.length === 0) {
-        this.expandedGroups = [Object.keys(newVal)[0]];
-      }
+    filteredWardrobe: {
+      handler(newVal) {
+        if (newVal.length > 0) {
+          const groups = this.groupedWardrobe;
+          const keys = Object.keys(groups);
+          // 如果当前没有展开任何组，默认展开第一个
+          if (keys.length > 0 && this.expandedGroups.length === 0) {
+            this.expandedGroups.push(keys[0]);
+          }
+        }
+      },
+      deep: true
     }
   },
 
@@ -1162,21 +1152,10 @@ createApp({
   },
   
   methods: {
-    // 💡 切换折叠状态
     toggleAccordion(key) {
       const idx = this.expandedGroups.indexOf(key);
       if (idx > -1) this.expandedGroups.splice(idx, 1);
       else this.expandedGroups.push(key);
-    },
-
-    getOwnerName(key) {
-      const map = { dad: '爸爸', mom: '妈妈', sister: '姐姐', brother: '弟弟', other: '其他' };
-      return map[key] || key;
-    },
-
-    getOwnerIcon(key) {
-      const map = { dad: '👨', mom: '👩', sister: '👧', brother: '👦', other: '🎒' };
-      return map[key] || '🎒';
     },
 
     switchView(newView) {
