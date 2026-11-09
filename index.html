@@ -54,8 +54,9 @@
     .search-box input:focus { border-color: #e6703b; }
     .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #999; }
     
-    .filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;}
-    .filter-btn { padding: 8px 16px; background: #fff; border: 1px solid #e8e2d6; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; }
+    /* 💡 修复1：四色按钮刚好一排，不滑动 */
+    .filter-bar { display: flex; gap: 8px; width: 100%; }
+    .filter-btn { flex: 1; text-align: center; padding: 8px 0; background: #fff; border: 1px solid #e8e2d6; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; overflow: hidden; text-overflow: ellipsis;}
     .filter-btn.active { background: #e6703b; color: white; border-color: #e6703b; font-weight: 600; }
     .season-select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #e8e2d6; font-size: 14px; background: #fff; color: #555; margin-top: 10px;}
     
@@ -87,7 +88,7 @@
     .input-wrap { margin-bottom: 14px; min-width: 0; }
     label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
     
-    /* 统一输入框高度，修复日期框丑的问题 */
+    /* 统一输入框高度 */
     input, select, textarea { width: 100%; border: 1px solid #ddd8ce; border-radius: 12px; padding: 12px; font-size: 15px; background: #faf9f7; outline: none; transition: border 0.2s; min-width: 0; min-height: 46px;}
     input:focus, select:focus, textarea:focus { border-color: #e6703b; background: #fff; }
     
@@ -134,13 +135,6 @@
     /* 收纳库底部浮动操作栏 */
     .copy-bottom-bar { position: fixed; bottom: 80px; left: 20px; right: 20px; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); padding: 14px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; z-index: 100; animation: slideUp 0.3s ease-out;}
 
-    /* 💡 新增：箱子横向滑动选择器 */
-    .box-scroll { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 8px; }
-    .box-card { flex: 0 0 100px; border: 2px solid #eee; border-radius: 12px; padding: 6px; text-align: center; cursor: pointer; transition: all 0.2s; background: #faf9f7; }
-    .box-card.active { border-color: #e6703b; background: #fff5ef; }
-    .box-img { width: 100%; height: 70px; object-fit: cover; border-radius: 8px; background: #ddd; margin-bottom: 6px; }
-    .box-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    
     /* 💡 新增：分类管理树样式 */
     .cat-manage-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
     .cat-manage-sub { padding-left: 20px; }
@@ -241,10 +235,9 @@
         
         <div class="filter-bar">
           <div class="filter-btn" :class="{active: filterOwner==='all'}" @click="filterOwner='all'">全部</div>
-          <div class="filter-btn" :class="{active: filterOwner==='dad'}" @click="filterOwner='dad'">👨爸爸</div>
-          <div class="filter-btn" :class="{active: filterOwner==='mom'}" @click="filterOwner='mom'">👩妈妈</div>
-          <div class="filter-btn" :class="{active: filterOwner==='sister'}" @click="filterOwner='sister'">👧姐姐</div>
-          <div class="filter-btn" :class="{active: filterOwner==='brother'}" @click="filterOwner='brother'">👦弟弟</div>
+          <div class="filter-btn" :class="{active: filterOwner==='dad'}" @click="filterOwner='dad'">爸爸</div>
+          <div class="filter-btn" :class="{active: filterOwner==='mom'}" @click="filterOwner='mom'">妈妈</div>
+          <div class="filter-btn" :class="{active: filterOwner==='sister'}" @click="filterOwner='sister'">姐姐</div>
         </div>
         
         <div style="display:flex; gap:10px; margin-top:10px;">
@@ -440,7 +433,7 @@
       </div>
     </div>
 
-    <!-- ================= 日用品 (改造为折叠列表) ================= -->
+    <!-- ================= 日用品 (折叠列表) ================= -->
     <div v-if="view === 'supplies'">
       <div class="card" style="background: #fff5ef; display: flex; justify-content: space-between; align-items: center; padding: 16px;" @click="switchView('todo')">
         <div>
@@ -456,8 +449,8 @@
           <input v-model="searchSupply" placeholder="搜索名称、分类或位置..." />
         </div>
 
+        <!-- 💡 修复1：去掉了全部，直接四个类，刚好一排 -->
         <div class="filter-bar">
-          <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filterSupply='all'">全部</div>
           <div v-for="(subs, cat) in categoryDict" :key="cat" class="filter-btn" :class="{active: filterSupply===cat}" @click="filterSupply=cat">{{ cat }}</div>
         </div>
       </div>
@@ -550,7 +543,7 @@
       </div>
     </div>
 
-    <!-- ================= 设置 (新增分类管理入口) ================= -->
+    <!-- ================= 设置 ================= -->
     <div v-if="view === 'setting'">
       <div class="card">
         <h2>☁️ 云端同步状态</h2>
@@ -761,7 +754,7 @@
     </div>
   </div>
 
-  <!-- ================= 💡 弹窗：添加/编辑日用品 (极致优化版) ================= -->
+  <!-- ================= 💡 弹窗：添加/编辑日用品 (全新布局) ================= -->
   <div class="modal-mask" v-if="supplyModal.show" @click.self="supplyModal.show=false">
     <div class="modal-box">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -769,64 +762,79 @@
         <button v-if="supplyModal.isEdit" class="btn" style="background: #fce8e8; color: #d14a4a; padding: 6px 12px; font-size: 13px; border-radius: 8px;" @click="deleteSupply">删除</button>
       </div>
       
-      <!-- 1. 存放位置 (照片置顶) -->
+      <!-- 💡 修复2：下拉框选箱子 + 搜索 -->
       <div class="input-wrap" style="background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
           <label style="color: #d14a4a; font-weight: 600; margin: 0;">📍 存放在哪个箱子？ <span style="color:red">*</span></label>
           <button v-if="locationsData.length === 0" class="btn small" style="background:#4A90E2; padding: 4px 8px; font-size: 12px;" @click="locModal.show = true">+ 快速新建</button>
         </div>
         
-        <div v-if="locationsData.length > 0" class="box-scroll">
-          <div class="box-card" :class="{active: supplyModal.form.location_id === loc.id}" v-for="loc in locationsData" :key="loc.id" @click="supplyModal.form.location_id = loc.id">
-            <img v-if="loc.image_url" :src="loc.image_url" class="box-img" />
-            <div v-else class="box-img" style="display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">无图</div>
-            <div class="box-name">{{ loc.code }} - {{ loc.name }}</div>
-          </div>
-        </div>
-        <p v-else style="font-size: 12px; color: #d14a4a; margin-top: 6px;">
+        <input 
+          v-model="boxSearchKeyword" 
+          placeholder="🔍 输入编号或名称搜索箱子..." 
+          style="margin-bottom: 8px; border-color: #fce8e8;"
+        />
+        <select v-model="supplyModal.form.location_id" style="border-color: #fce8e8;">
+          <option :value="null">-- 请选择收纳位置 --</option>
+          <option v-for="loc in filteredLocationsForSelect" :key="loc.id" :value="loc.id">
+            {{ loc.code }} - {{ loc.name }}
+          </option>
+        </select>
+        <p v-if="locationsData.length === 0" style="font-size: 12px; color: #d14a4a; margin-top: 6px;">
           ⚠️ 你还没有建收纳箱！请先去「收纳库」建一个。
+        </p>
+        <p v-else-if="filteredLocationsForSelect.length === 0" style="font-size: 12px; color: #999; margin-top: 6px;">
+          没有找到匹配的箱子，请换个词试试。
         </p>
       </div>
 
-      <!-- 2. 分类选择 (二类+三类) -->
-      <div style="display: flex; gap: 10px; margin-top: 14px;">
+      <!-- 💡 修复4：分类联动 (增加大类选择，二级只展示该大类下的) -->
+      <div class="input-wrap" style="margin-top: 14px;">
+        <label>归属大类</label>
+        <select v-model="currentSelectedMainCat" @change="onMainCatChange">
+          <option v-for="(subs, cat) in categoryDict" :key="cat" :value="cat">{{ cat }}</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1; min-width: 0;">
           <label>二级分类</label>
           <select v-model="supplyModal.form.sub_category" @change="onSubCategoryChange">
             <option value="">-- 请选择 --</option>
-            <option v-for="sub in getAllSubCategories()" :key="sub" :value="sub">{{ sub }}</option>
+            <option v-for="sub in getSubCategoriesByCat(currentSelectedMainCat)" :key="sub" :value="sub">{{ sub }}</option>
           </select>
         </div>
         <div class="input-wrap" style="flex: 1; min-width: 0;">
           <label>三级分类</label>
           <select v-model="supplyModal.form.third_category" @change="onThirdCategoryChange">
             <option value="">-- 请选择 --</option>
-            <option v-for="third in getThirdCategoriesBySub(supplyModal.form.sub_category)" :key="third" :value="third">{{ third }}</option>
+            <option v-for="third in getThirdCategoriesBySub(currentSelectedMainCat, supplyModal.form.sub_category)" :key="third" :value="third">{{ third }}</option>
           </select>
         </div>
       </div>
 
-      <!-- 3. 物品信息 -->
+      <!-- 物品信息 -->
       <div class="input-wrap">
         <label>物品名称 <span style="color:red">*</span> (可修改)</label>
         <input v-model="supplyModal.form.name" placeholder="默认自动填入三级分类名称" />
+      </div>
+
+      <!-- 💡 修复3：数量/单位一行，规格/提醒一行 -->
+      <div style="display: flex; gap: 10px;">
+        <div class="input-wrap" style="flex: 1; min-width: 0;">
+          <label>当前数量</label>
+          <input type="number" v-model="supplyModal.form.quantity" placeholder="如：2" />
+        </div>
+        <div class="input-wrap" style="flex: 1; min-width: 0;">
+          <label>单位</label>
+          <input v-model="supplyModal.form.unit" placeholder="如：包 / 瓶" />
+        </div>
       </div>
 
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1; min-width: 0;">
           <label>规格</label>
           <input v-model="supplyModal.form.spec" placeholder="如：3层100抽 / 500ml" />
-        </div>
-        <div class="input-wrap" style="flex: 1; min-width: 0;">
-          <label>当前数量</label>
-          <input type="number" v-model="supplyModal.form.quantity" placeholder="如：2" />
-        </div>
-      </div>
-
-      <div style="display: flex; gap: 10px;">
-        <div class="input-wrap" style="flex: 1; min-width: 0;">
-          <label>单位</label>
-          <input v-model="supplyModal.form.unit" placeholder="如：包 / 瓶" />
         </div>
         <div class="input-wrap" style="flex: 1; min-width: 0;">
           <label>低库存提醒 (≤)</label>
@@ -939,6 +947,11 @@ createApp({
       
       isCopyMode: false,
       
+      // 用于弹窗内搜索箱子的关键词
+      boxSearchKeyword: '',
+      // 当前选中的大类 (用于联动二三级)
+      currentSelectedMainCat: '洗护纸',
+      
       locModal: {
         show: false, isEdit: false,
         form: { id: null, code: '', name: '', description: '', image_url: '' }
@@ -952,7 +965,7 @@ createApp({
         form: { id: null, name: '', category: '', sub_category: '', third_category: '', spec: '', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
       },
       
-      // 💡 核心：分类字典。初始化时从本地读取，如果没有则用默认配置
+      // 💡 核心：分类字典
       categoryDict: {
         '洗护纸': {
           '纸品': ['抽纸', '卷纸', '手帕纸', '厨房纸'],
@@ -991,6 +1004,16 @@ createApp({
       return "❄️ 寒冬腊月，羽绒服、厚被子和保暖用品都在哪个箱子？赶紧查一下，别冻着啦。";
     },
 
+    // 💡 搜索过滤后的箱子列表 (用于下拉框)
+    filteredLocationsForSelect() {
+      const kw = this.boxSearchKeyword.trim().toLowerCase();
+      if (!kw) return this.locationsData;
+      return this.locationsData.filter(loc => {
+        const str = `${loc.code} ${loc.name} ${loc.description}`.toLowerCase();
+        return str.includes(kw);
+      });
+    },
+
     filteredLocations() {
       const kw = this.searchStorage.trim().toLowerCase();
       if (!kw) return this.locationsData;
@@ -1027,13 +1050,11 @@ createApp({
     filteredSupplies() {
       const kw = this.searchSupply.trim().toLowerCase();
       return this.suppliesData.filter(item => {
-        // 兼容旧数据：如果旧数据存的是大类，用 item.sub_category 过滤；如果新数据没有大类，用二级分类过滤
         let matchCategory = true;
         if (this.filterSupply !== 'all') {
             if (item.category) {
                 matchCategory = item.category === this.filterSupply;
             } else {
-                // 如果原来没存大类，尝试看二级分类是否匹配大类
                 const dict = this.categoryDict[this.filterSupply];
                 if (dict && item.sub_category) {
                     matchCategory = !!dict[item.sub_category];
@@ -1052,11 +1073,9 @@ createApp({
       });
     },
     
-    // 💡 核心：日用品按 二级分类 和 三级分类 分组
     groupedSupplies() {
       const groups = {};
       
-      // 确保如果有数据，先把二级分类建好空组，避免显示遗漏
       for (const cat in this.categoryDict) {
         for (const sub in this.categoryDict[cat]) {
            if (!groups[sub]) {
@@ -1066,7 +1085,6 @@ createApp({
       }
 
       this.filteredSupplies.forEach(item => {
-        // 如果数据没有二级分类，放到一个“未分类”组里
         const subKey = item.sub_category || '未分类';
         const thirdKey = item.third_category || '其他';
 
@@ -1083,12 +1101,10 @@ createApp({
         groups[subKey].subCategories[thirdKey].items.push(item);
       });
 
-      // 清理没有数据的空分类
       for (const subKey in groups) {
           if (groups[subKey].totalCount === 0) {
              delete groups[subKey];
           } else {
-             // 清理空的三级分类
              for (const thirdKey in groups[subKey].subCategories) {
                  if (groups[subKey].subCategories[thirdKey].items.length === 0) {
                     delete groups[subKey].subCategories[thirdKey];
@@ -1134,7 +1150,9 @@ createApp({
   },
 
   mounted() {
-    // 💡 初始化时读取本地缓存的分类配置
+    // 初始化时，默认选中第一个大类
+    this.currentSelectedMainCat = Object.keys(this.categoryDict)[0] || '';
+
     const localCat = localStorage.getItem('custom_categories');
     if (localCat) {
       try {
@@ -1152,7 +1170,7 @@ createApp({
   },
   
   methods: {
-    // 💡 保存分类配置到本地
+    // 保存分类配置到本地
     saveCategoryToLocal() {
       localStorage.setItem('custom_categories', JSON.stringify(this.categoryDict));
     },
@@ -1196,25 +1214,25 @@ createApp({
       }
     },
 
-    // 💡 获取所有不重复的二级分类
-    getAllSubCategories() {
-      const subs = new Set();
-      for (const cat in this.categoryDict) {
-        for (const sub in this.categoryDict[cat]) {
-          subs.add(sub);
-        }
-      }
-      return Array.from(subs);
+    // 💡 获取特定大类下的二级分类
+    getSubCategoriesByCat(catName) {
+      if (!this.categoryDict[catName]) return [];
+      return Object.keys(this.categoryDict[catName]);
     },
 
-    // 💡 根据二级分类获取三级分类
-    getThirdCategoriesBySub(subCategory) {
-      for (const cat in this.categoryDict) {
-        if (this.categoryDict[cat][subCategory]) {
-          return this.categoryDict[cat][subCategory];
-        }
+    // 💡 根据大类+二级分类获取三级分类
+    getThirdCategoriesBySub(catName, subCategory) {
+      if (this.categoryDict[catName] && this.categoryDict[catName][subCategory]) {
+        return this.categoryDict[catName][subCategory];
       }
       return [];
+    },
+
+    // 💡 切换大类时，清空已选的二三级分类和名称
+    onMainCatChange() {
+      this.supplyModal.form.sub_category = '';
+      this.supplyModal.form.third_category = '';
+      this.supplyModal.form.name = '';
     },
 
     onSubCategoryChange() {
@@ -1223,7 +1241,6 @@ createApp({
     },
 
     onThirdCategoryChange() {
-      // 自动填充名称
       if (this.supplyModal.form.third_category) {
         this.supplyModal.form.name = this.supplyModal.form.third_category;
       }
@@ -1871,12 +1888,27 @@ createApp({
     },
 
     openAddSupply() {
+      // 重置搜索和分类
+      this.boxSearchKeyword = '';
+      this.currentSelectedMainCat = Object.keys(this.categoryDict)[0] || '';
+      
       this.supplyModal = {
         show: true, isEdit: false,
         form: { id: null, name: '', category: '', sub_category: '', third_category: '', spec: '', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
       };
     },
     openEditSupply(item) {
+      // 如果是编辑，尝试匹配出大类
+      let matchedCat = Object.keys(this.categoryDict)[0] || '';
+      for (const cat in this.categoryDict) {
+        if (this.categoryDict[cat][item.sub_category]) {
+          matchedCat = cat;
+          break;
+        }
+      }
+      this.currentSelectedMainCat = matchedCat;
+      this.boxSearchKeyword = '';
+
       const formData = {
         id: item.id,
         name: item.name,
@@ -1902,19 +1934,12 @@ createApp({
       if (!f.third_category) { alert("请选择三级分类！"); return; }
 
       this.isUploading = true;
-      
-      // 兼容旧数据：把大类作为分类存进去，或者留空
-      // 这里为了兼容，我们还是把选中的二级分类的大类找出来存进 category 字段
-      let catName = '';
-      for (const cat in this.categoryDict) {
-        if (this.categoryDict[cat][f.sub_category]) {
-          catName = cat;
-          break;
-        }
-      }
 
       const payload = { 
-        name: f.name, category: catName, sub_category: f.sub_category, third_category: f.third_category, 
+        name: f.name, 
+        category: this.currentSelectedMainCat, // 把当前大类存进去
+        sub_category: f.sub_category, 
+        third_category: f.third_category, 
         spec: f.spec,
         season: f.season, 
         quantity: Number(f.quantity), unit: f.unit, 
