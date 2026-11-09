@@ -54,9 +54,11 @@
     .search-box input:focus { border-color: #e6703b; }
     .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #999; }
     
-    .filter-bar { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;}
-    .filter-btn { padding: 8px 16px; background: #fff; border: 1px solid #e8e2d6; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; }
-    .filter-btn.active { background: #e6703b; color: white; border-color: #e6703b; font-weight: 600; }
+    /* 4个大类平铺按钮 */
+    .filter-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+    .filter-btn { padding: 10px 0; background: #fff; border: 1px solid #e8e2d6; border-radius: 12px; font-size: 14px; text-align: center; cursor: pointer; }
+    .filter-btn.active { background: #e6703b; color: white; border-color: #e6703b; font-weight: 600; box-shadow: 0 2px 6px rgba(230,112,59,0.3);}
+
     .season-select { width: 100%; padding: 8px 12px; border-radius: 12px; border: 1px solid #e8e2d6; font-size: 14px; background: #fff; color: #555; margin-top: 10px;}
     
     /* 💡 极简折叠面板样式 */
@@ -227,8 +229,8 @@
           <input v-model="searchWardrobe" placeholder="搜索颜色、名称、品类或位置..." />
         </div>
         
+        <!-- 4个大类平铺，无“全部” -->
         <div class="filter-bar">
-          <div class="filter-btn" :class="{active: filterOwner==='all'}" @click="filterOwner='all'">全部</div>
           <div class="filter-btn" :class="{active: filterOwner==='dad'}" @click="filterOwner='dad'">👨爸爸</div>
           <div class="filter-btn" :class="{active: filterOwner==='mom'}" @click="filterOwner='mom'">👩妈妈</div>
           <div class="filter-btn" :class="{active: filterOwner==='sister'}" @click="filterOwner='sister'">👧姐姐</div>
@@ -438,27 +440,22 @@
         <button class="btn small">去查看</button>
       </div>
 
+      <!-- 顶部 4 大类平铺，无“全部” -->
       <div class="filter-container">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input v-model="searchSupply" placeholder="搜索名称、分类或位置..." />
-        </div>
-
         <div class="filter-bar">
-          <div class="filter-btn" :class="{active: filterSupply==='all'}" @click="filterSupply='all'">全部</div>
-          <div class="filter-btn" :class="{active: filterSupply==='纸品'}" @click="filterSupply='纸品'">纸品</div>
-          <div class="filter-btn" :class="{active: filterSupply==='清洁'}" @click="filterSupply='清洁'">清洁</div>
-          <div class="filter-btn" :class="{active: filterSupply==='洗护'}" @click="filterSupply='洗护'">洗护</div>
-          <div class="filter-btn" :class="{active: filterSupply==='药品'}" @click="filterSupply='药品'">药品</div>
-          <div class="filter-btn" :class="{active: filterSupply==='被子/床品'}" @click="filterSupply='被子/床品'">被子/床品</div>
-          <div class="filter-btn" :class="{active: filterSupply==='五金'}" @click="filterSupply='五金'">五金</div>
+          <div class="filter-btn" :class="{active: filterSupply==='洗护纸'}" @click="filterSupply='洗护纸'; filterSubSupply=''">洗护纸</div>
+          <div class="filter-btn" :class="{active: filterSupply==='药保健'}" @click="filterSupply='药保健'; filterSubSupply=''">药保健</div>
+          <div class="filter-btn" :class="{active: filterSupply==='床品被'}" @click="filterSupply='床品被'; filterSubSupply=''">床品被</div>
+          <div class="filter-btn" :class="{active: filterSupply==='工具杂'}" @click="filterSupply='工具杂'; filterSubSupply=''">工具杂</div>
         </div>
-        <select v-model="filterSupplySeason" class="season-select">
-          <option value="all">🌤️ 所有季节</option>
-          <option value="冬季">❄️ 冬季</option>
-          <option value="夏季">☀️ 夏季</option>
-          <option value="四季">📅 四季</option>
-        </select>
+        
+        <!-- 第二级分类：下拉框 -->
+        <div style="display: flex; gap: 10px;">
+          <select v-model="filterSubSupply" class="season-select" style="margin-top:0; flex:1;">
+            <option value="">📂 所有小类</option>
+            <option v-for="sub in getSubCategories(filterSupply)" :key="sub" :value="sub">{{ sub }}</option>
+          </select>
+        </div>
       </div>
 
       <!-- 纯文本横条模式 -->
@@ -476,6 +473,8 @@
                 <div class="item-name" style="font-size: 16px;">{{ item.name }}</div>
                 <div class="item-meta">
                   <span class="tag orange">{{ item.category }}</span>
+                  <span class="tag" v-if="item.sub_category">{{ item.sub_category }}</span>
+                  <span class="tag" v-if="item.third_category">{{ item.third_category }}</span>
                   <span class="tag red" v-if="getDaysLeft(item.expire_date) <= 30">剩{{ getDaysLeft(item.expire_date) }}天</span>
                 </div>
                 <div class="item-meta" style="font-size: 12px; color: #999; margin-top: 4px;">
@@ -690,7 +689,7 @@
     </div>
   </div>
 
-  <!-- ================= 弹窗：添加/编辑日用品 ================= -->
+  <!-- ================= 💡 弹窗：添加/编辑日用品 (包含三级联动) ================= -->
   <div class="modal-mask" v-if="supplyModal.show" @click.self="supplyModal.show=false">
     <div class="modal-box">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -716,30 +715,33 @@
         <input v-model="supplyModal.form.name" placeholder="如：抽纸 / 冬被" />
       </div>
 
+      <!-- 三级联动分类 -->
       <div style="display: flex; gap: 10px;">
         <div class="input-wrap" style="flex: 1; min-width: 0;">
-          <label>分类</label>
-          <select v-model="supplyModal.form.category">
-            <option value="纸品">纸品</option>
-            <option value="清洁">清洁</option>
-            <option value="洗护">洗护</option>
-            <option value="药品">药品</option>
-            <option value="被子/床品">被子/床品</option>
-            <option value="五金">五金</option>
-            <option value="其他">其他</option>
+          <label>大类</label>
+          <select v-model="supplyModal.form.category" @change="supplyModal.form.sub_category = ''; supplyModal.form.third_category = ''">
+            <option value="洗护纸">洗护纸品</option>
+            <option value="药保健">药保健</option>
+            <option value="床品被">床品被</option>
+            <option value="工具杂">工具杂</option>
           </select>
         </div>
         <div class="input-wrap" style="flex: 1; min-width: 0;">
-          <label>适用季节</label>
-          <select v-model="supplyModal.form.season">
-            <option value="春季">春季</option>
-            <option value="夏季">夏季</option>
-            <option value="秋季">秋季</option>
-            <option value="冬季">冬季</option>
-            <option value="春秋">春秋季</option>
-            <option value="四季">四季</option>
+          <label>小类</label>
+          <select v-model="supplyModal.form.sub_category" @change="supplyModal.form.third_category = ''">
+            <option value="">-- 请选择 --</option>
+            <option v-for="sub in getSubCategories(supplyModal.form.category)" :key="sub" :value="sub">{{ sub }}</option>
           </select>
         </div>
+      </div>
+
+      <!-- 如果选了特定小类，展示第三级 -->
+      <div class="input-wrap" v-if="getThirdCategories(supplyModal.form.sub_category).length > 0">
+        <label>具体类型</label>
+        <select v-model="supplyModal.form.third_category">
+          <option value="">-- 请选择具体类型 --</option>
+          <option v-for="third in getThirdCategories(supplyModal.form.sub_category)" :key="third" :value="third">{{ third }}</option>
+        </select>
       </div>
 
       <div class="input-wrap" style="background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
@@ -841,11 +843,9 @@ createApp({
       view: 'home',
       isUploading: false,
       
-      // 默认按品类分组，去除切换逻辑
       groupBy: 'category', 
       expandedGroups: [], 
       
-      // 图片处理相关
       previewImage: '',
       previewItemData: null,
       posterUrl: '',
@@ -867,11 +867,11 @@ createApp({
       searchWardrobe: '',
       searchSupply: '',
       searchStorage: '',
-      filterOwner: 'all',
+      filterOwner: 'dad', // 默认选中爸爸
       filterSeason: 'all',
       filterFitStatus: 'all',
-      filterSupply: 'all',
-      filterSupplySeason: 'all',
+      filterSupply: '洗护纸', // 默认选中洗护纸
+      filterSubSupply: '', // 二级分类筛选
       
       currentLocation: null,
       storageDetailBatchMode: false,
@@ -889,7 +889,27 @@ createApp({
       },
       supplyModal: {
         show: false, isEdit: false,
-        form: { id: null, name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
+        form: { id: null, name: '', category: '洗护纸品', sub_category: '', third_category: '', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
+      },
+      
+      // 💡 新增：三级联动分类字典
+      categoryDict: {
+        '洗护纸': {
+          '纸品': ['抽纸', '卷纸', '手帕纸', '厨房纸'],
+          '卫生巾': ['日用', '夜用', '护垫', '迷你巾', '安睡裤'],
+          '清洁': ['洗衣液', '洗衣粉', '肥皂', '洁厕灵', '清洁剂', '消毒液'],
+          '洗漱': ['洗发水(大人)', '洗发水(小孩)', '沐浴乳(大人)', '沐浴乳(小孩)', '牙膏', '牙刷'],
+          '护肤': ['面霜(大人)', '面霜(小孩)', '洗面奶(大人)', '洗面奶(小孩)', '化妆品', '身体乳']
+        },
+        '药保健': {
+          '感冒药': [], '退烧药': [], '肠胃药': [], '外伤药': [], '维生素': [], '其他药': []
+        },
+        '床品被': {
+          '被子': ['冬季被', '夏季被', '春秋被'], '四件套': ['纯棉', '绒面'], '枕头': ['大人', '小孩'], '其他': []
+        },
+        '工具杂': {
+          '五金工具': [], '电池': [], '灯泡': [], '胶带': [], '其他杂物': []
+        }
       },
       
       batchMoveModal: { show: false, targetLocId: null },
@@ -934,7 +954,6 @@ createApp({
       });
     },
 
-    // 强制按品类分组
     groupedWardrobe() {
       const groups = {};
       this.filteredWardrobe.forEach(item => {
@@ -949,11 +968,14 @@ createApp({
       const kw = this.searchSupply.trim().toLowerCase();
       return this.suppliesData.filter(item => {
         const matchCategory = this.filterSupply === 'all' || item.category === this.filterSupply;
+        const matchSub = this.filterSubSupply === '' || item.sub_category === this.filterSubSupply;
         const matchSeason = this.filterSupplySeason === 'all' || item.season === this.filterSupplySeason;
-        if (!matchCategory || !matchSeason) return false;
+        
+        if (!matchCategory || !matchSub || !matchSeason) return false;
         if (!kw) return true;
+        
         const locName = this.getLocationName(item.location_id) || item.location || '';
-        const searchStr = `${item.name} ${item.category} ${item.season} ${locName}`.toLowerCase();
+        const searchStr = `${item.name} ${item.category} ${item.sub_category || ''} ${item.third_category || ''} ${item.season} ${locName}`.toLowerCase();
         return searchStr.includes(kw);
       });
     },
@@ -1000,6 +1022,20 @@ createApp({
   },
   
   methods: {
+    getSubCategories(category) {
+      if (!this.categoryDict[category]) return [];
+      return Object.keys(this.categoryDict[category]);
+    },
+    
+    getThirdCategories(subCategory) {
+      for (const cat in this.categoryDict) {
+        if (this.categoryDict[cat][subCategory]) {
+          return this.categoryDict[cat][subCategory];
+        }
+      }
+      return [];
+    },
+
     toggleAccordion(key) {
       const idx = this.expandedGroups.indexOf(key);
       if (idx > -1) this.expandedGroups.splice(idx, 1);
@@ -1082,7 +1118,6 @@ createApp({
       this.previewItemData = null;
     },
 
-    // 专门用于触发海报生成
     showPreview(item, type) {
       if (!item.image_url) { alert("这件物品没有上传照片哦~"); return; }
       this.previewItemData = { ...item, type: type };
@@ -1163,7 +1198,8 @@ createApp({
         ctx.fillStyle = '#e6703b';
         ctx.font = '28px sans-serif';
         let tagText = item.type === 'wardrobe' ? `尺码: ${item.size || '无'}` : `数量: ${item.quantity}${item.unit}`;
-        if (item.category) tagText += ` | 分类: ${item.category}`;
+        if (item.category) tagText += ` | ${item.category}`;
+        if (item.sub_category) tagText += ` | ${item.sub_category}`;
         ctx.fillText(tagText, 40, cardY + 115);
         
         ctx.fillStyle = '#666666';
@@ -1580,7 +1616,7 @@ createApp({
     openAddWardrobe() {
       this.modal = {
         show: true, isEdit: false,
-        form: { id: null, owner: this.filterOwner === 'all' ? 'dad' : this.filterOwner, season: '四季', fit_status: '合身', name: '', category: '上衣', size: '', location_id: null, image_url: '' }
+        form: { id: null, owner: this.filterOwner, season: '四季', fit_status: '合身', name: '', category: '上衣', size: '', location_id: null, image_url: '' }
       };
     },
     openEditWardrobe(item) {
@@ -1633,7 +1669,7 @@ createApp({
     openAddSupply() {
       this.supplyModal = {
         show: true, isEdit: false,
-        form: { id: null, name: '', category: '纸品', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
+        form: { id: null, name: '', category: '洗护纸品', sub_category: '', third_category: '', season: '四季', quantity: 1, unit: '包', expire_date: '', low_stock: 1, location_id: null, image_url: '' }
       };
     },
     openEditSupply(item) {
@@ -1641,6 +1677,8 @@ createApp({
         id: item.id,
         name: item.name,
         category: item.category,
+        sub_category: item.sub_category || '',
+        third_category: item.third_category || '',
         season: item.season,
         quantity: item.quantity,
         unit: item.unit,
@@ -1656,7 +1694,8 @@ createApp({
       if (!f.name) { alert("请填写物品名称！"); return; }
       this.isUploading = true;
       const payload = { 
-        name: f.name, category: f.category, season: f.season, 
+        name: f.name, category: f.category, sub_category: f.sub_category, third_category: f.third_category, 
+        season: f.season, 
         quantity: Number(f.quantity), unit: f.unit, 
         expire_date: f.expire_date || null, low_stock: Number(f.low_stock), 
         location_id: f.location_id, image_url: f.image_url 
