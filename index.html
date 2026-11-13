@@ -79,7 +79,7 @@
     .item-name { font-weight: 600; font-size: 16px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .item-meta { font-size: 12px; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;}
     
-    /* 弹窗 (保留用于轻量级提示，如批量移箱/设置) */
+    /* 弹窗 (保留用于轻量级提示) */
     .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; backdrop-filter: blur(2px); }
     .modal-box { background: #fff; border-radius: 20px; padding: 24px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; overflow-x: hidden; animation: slideUp 0.3s ease-out; }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -261,6 +261,24 @@
         </div>
       </div>
 
+      <!-- 统计维度切换 -->
+      <div style="display: flex; gap: 10px; margin-bottom: 12px; padding: 0 4px;">
+        <div 
+          style="flex: 1; text-align: center; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;"
+          :style="groupBy === 'category' ? 'background: #e6703b; color: #fff;' : 'background: #fff; color: #666; border: 1px solid #e8e2d6;'"
+          @click="groupBy = 'category'"
+        >
+          按分类统计
+        </div>
+        <div 
+          style="flex: 1; text-align: center; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;"
+          :style="groupBy === 'size' ? 'background: #e6703b; color: #fff;' : 'background: #fff; color: #666; border: 1px solid #e8e2d6;'"
+          @click="groupBy = 'size'"
+        >
+          按尺码统计
+        </div>
+      </div>
+
       <div v-if="filteredWardrobe.length === 0" class="empty-text">没有找到相关衣物</div>
       
       <div v-else class="accordion-container">
@@ -291,6 +309,7 @@
                       <div class="item-name">{{ item.name }}</div>
                       <div class="item-meta">
                         <span class="tag blue">{{ item.size }}</span> 
+                        <span v-if="item.category" class="tag orange">{{ item.category }}</span> 
                         <span v-if="item.season" class="tag green">{{ item.season }}</span>
                         <span v-if="item.fit_status && item.fit_status !== '合身'" class="tag" :class="item.fit_status === '偏小' ? 'red' : 'orange'">{{ item.fit_status }}</span>
                       </div>
@@ -713,16 +732,29 @@
           <div class="input-wrap" style="flex: 1;">
             <label>品类</label>
             <select v-model="modal.form.category">
-              <option value="上衣">上衣</option>
-              <option value="裤子">裤子</option>
               <option value="外套">外套</option>
-              <option value="鞋子">鞋子</option>
-              <option value="配饰">配饰</option>
+              <option value="上衣">上衣</option>
+              <option value="套装">套装</option>
+              <option value="秋衣秋裤">秋衣秋裤</option>
+              <option value="裤子">裤子</option>
+              <option value="其他">其他</option>
             </select>
           </div>
           <div class="input-wrap" style="flex: 1;">
             <label>尺码</label>
-            <input v-model="modal.form.size" placeholder="如：140 / 37" />
+            <!-- 支持下拉选择和手动输入 -->
+            <input v-model="modal.form.size" list="size-options" placeholder="选或填：110~190" />
+            <datalist id="size-options">
+              <option value="110">110</option>
+              <option value="120">120</option>
+              <option value="130">130</option>
+              <option value="140">140</option>
+              <option value="150">150</option>
+              <option value="160">160</option>
+              <option value="170">170</option>
+              <option value="180">180</option>
+              <option value="190">190</option>
+            </datalist>
           </div>
         </div>
 
@@ -770,7 +802,6 @@
       <div class="card">
         <h3 style="margin-bottom: 16px; font-size: 18px;">{{ supplyModal.isEdit ? '编辑日用品' : '添加日用品' }}</h3>
 
-        <!-- 存放位置 -->
         <div class="input-wrap" style="background: #fff8f8; padding: 14px; border-radius: 12px; border: 1px solid #fce8e8;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label style="color: #d14a4a; font-weight: 600; margin: 0;">📍 存放在哪个箱子？ <span style="color:red">*</span></label>
@@ -796,7 +827,6 @@
           </p>
         </div>
 
-        <!-- 分类选择 -->
         <div class="input-wrap" style="margin-top: 14px;">
           <label>归属大类</label>
           <select v-model="currentSelectedMainCat" @change="onMainCatChange">
@@ -821,7 +851,6 @@
           </div>
         </div>
 
-        <!-- 物品信息 -->
         <div class="input-wrap">
           <label>物品名称 <span style="color:red">*</span> (可修改)</label>
           <input v-model="supplyModal.form.name" placeholder="默认自动填入三级分类名称" />
@@ -929,6 +958,7 @@ createApp({
       view: 'home',
       isUploading: false,
       
+      groupBy: 'category', // 默认按分类统计，可选 'size'
       expandedGroups: [], 
       expandedSuppliesGroups: [],
       expandedThirdGroups: [],
@@ -968,11 +998,10 @@ createApp({
       
       boxSearchKeyword: '',
       currentSelectedMainCat: '洗护纸',
-      returnToView: 'storage', // 用于记录“快速新建”来时的页面
+      returnToView: 'storage', 
 
       roomOptions: ['主卧', '客厅', '女儿房', '双床房', '洗衣间', '一楼', '其他'],
       
-      // 表单数据管理 (不再需要 show 属性)
       locModal: {
         isEdit: false,
         form: { id: null, room: '主卧', code: '', name: '', description: '', image_url: '' }
@@ -1079,10 +1108,11 @@ createApp({
       });
     },
 
+    // 💡 按选中的维度（分类/尺码）统计展示
     groupedWardrobe() {
       const groups = {};
       this.filteredWardrobe.forEach(item => {
-        let key = item.category || '其他';
+        let key = this.groupBy === 'category' ? (item.category || '其他') : (item.size ? `${item.size}码` : '未填尺码');
         if (!groups[key]) groups[key] = [];
         groups[key].push(item);
       });
@@ -1740,12 +1770,12 @@ createApp({
     },
 
     openAddLocation() {
-      this.returnToView = this.view; // 记住是从哪个页面进来的（比如从衣物页快速新建）
+      this.returnToView = this.view;
       this.locModal = { isEdit: false, form: { id: null, room: '主卧', code: '', name: '', description: '', image_url: '' } };
       this.switchView('add_location');
     },
     openEditLocation(loc) {
-      this.returnToView = this.view; // 同样记住来路
+      this.returnToView = this.view;
       this.locModal = { isEdit: true, form: { ...loc } };
       this.switchView('add_location');
     },
@@ -1861,7 +1891,7 @@ createApp({
           await this.supabase.from('storage_locations').insert([payload]);
         }
         await this.fetchData();
-        this.switchView(this.returnToView); // 保存后回到来时的页面
+        this.switchView(this.returnToView); 
       } catch (err) {
         alert("保存失败：" + err.message);
       } finally {
